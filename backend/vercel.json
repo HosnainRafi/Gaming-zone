@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build && npx prisma generate",
+  "outputDirectory": "dist",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "src/server.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}

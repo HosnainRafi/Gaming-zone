@@ -1,4 +1,30 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.local
+.env.*.local
 
+# Vite
+dist
+*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+
+# Vercel
+.vercel
