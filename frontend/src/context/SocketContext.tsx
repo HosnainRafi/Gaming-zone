@@ -30,7 +30,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const [timers, setTimers] = useState<Record<string, TimerUpdate>>({});
 
   useEffect(() => {
-    const socket = io("/", { withCredentials: true });
+    const socketUrl = import.meta.env.VITE_API_URL || "/";
+    const socket = io(socketUrl, { withCredentials: true, transports: ["polling"] });
     socketRef.current = socket;
 
     socket.on("connect", () => setConnected(true));

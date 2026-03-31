@@ -1,6 +1,10 @@
 import axios from "axios";
 
-export const api = axios.create({ baseURL: "/api" });
+const API_URL = import.meta.env.VITE_API_URL;
+
+export const api = axios.create({
+  baseURL: API_URL ? `${API_URL}/api` : "/api",
+});
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("gz_token");
