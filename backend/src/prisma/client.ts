@@ -1,6 +1,8 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
+let _prisma: PrismaClient | null = null;
+
 function createPrismaClient() {
   const connectionString = process.env["DATABASE_URL"];
   if (!connectionString) throw new Error("DATABASE_URL is not set");
@@ -14,4 +16,9 @@ function createPrismaClient() {
   });
 }
 
-export const prisma = createPrismaClient();
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    if (!_prisma) _prisma = createPrismaClient();
+    return (_prisma as Record<string | symbol, unknown>)[prop];
+  },
+});

@@ -4,10 +4,9 @@
   "functions": {
     "api/index.ts": {
       "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "src/**"
     }
   },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" }
-  ]
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }]
 }
