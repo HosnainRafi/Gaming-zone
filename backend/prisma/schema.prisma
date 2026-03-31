@@ -42,6 +42,17 @@ enum OfferType {
   TIME_BASED
 }
 
+enum MembershipPlanType {
+  WEEKLY
+  MONTHLY
+}
+
+enum SessionPricingType {
+  STANDARD
+  MEMBERSHIP
+  FIRST_TIME_FREE
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -52,10 +63,88 @@ model User {
   updatedAt    DateTime @updatedAt
 
   sessions       Session[]
+  membershipSales MembershipSale[]
   createdOffers  Offer[]   @relation("OfferCreatedBy")
   updatedOffers  Offer[]   @relation("OfferUpdatedBy")
 
   @@index([role])
+}
+
+model Customer {
+  id                  String       @id @default(cuid())
+  name                String
+  phone               String       @unique
+  hasClaimedFirstFree Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  memberships         Membership[]
+  membershipSales     MembershipSale[]
+  sessions            Session[]
+}
+
+model MembershipPlan {
+  id           String       @id @default(cuid())
+  name         String       @unique
+  price        Decimal      @db.Decimal(10, 2)
+  maxMinutes   Int
+  durationDays Int
+  isActive     Boolean      @default(true)
+  sortOrder    Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  memberships  Membership[]
+  sales        MembershipSale[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Membership {
+  id               String             @id @default(cuid())
+  customerId       String
+  planId           String?
+  planType         MembershipPlanType?
+  planName         String?
+  price            Decimal            @db.Decimal(10, 2)
+  maxMinutes       Int
+  remainingMinutes Int
+  startsAt         DateTime           @default(now())
+  expiresAt        DateTime
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  customer         Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan             MembershipPlan?    @relation(fields: [planId], references: [id], onDelete: SetNull)
+  sale             MembershipSale?
+  sessions         Session[]
+
+  @@index([customerId, isActive, expiresAt])
+  @@index([planType, expiresAt])
+  @@index([planId])
+}
+
+model MembershipSale {
+  id            String          @id @default(cuid())
+  membershipId  String          @unique
+  customerId    String
+  staffId       String
+  planId        String?
+  planName      String
+  amount        Decimal         @db.Decimal(10, 2)
+  paymentMethod PaymentMethod   @default(CASH)
+  createdAt     DateTime        @default(now())
+
+  membership    Membership      @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  customer      Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  staff         User            @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  plan          MembershipPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([staffId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([planId, createdAt])
 }
 
 model Device {
@@ -77,22 +166,34 @@ model Session {
   id              String        @id @default(cuid())
   deviceId        String
   staffId         String
+  customerId      String?
+  membershipId    String?
   customerName    String?       // customer name for receipt
+  customerPhone   String?
   startTime       DateTime
   endTime         DateTime
   durationMinutes Int
+  playerCount     Int           @default(1)
+  pricingType     SessionPricingType @default(STANDARD)
+  baseAmount      Decimal       @default(0) @db.Decimal(10, 2)
+  appliedDiscount Decimal       @default(0) @db.Decimal(10, 2)
   totalAmount     Decimal       @db.Decimal(10, 2)
+  appliedOfferCode String?
   status          SessionStatus @default(ACTIVE)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   device          Device        @relation(fields: [deviceId], references: [id], onDelete: Restrict)
   staff           User          @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  customer        Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  membership      Membership?   @relation(fields: [membershipId], references: [id], onDelete: SetNull)
   transaction     Transaction?
 
   @@index([deviceId, status])
   @@index([staffId, startTime])
   @@index([status, endTime])
+  @@index([customerId, startTime])
+  @@index([membershipId])
 }
 
 model Transaction {

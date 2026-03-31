@@ -5,6 +5,7 @@ const express_1 = require("express");
 const auth_routes_1 = require("./auth.routes");
 const dashboard_routes_1 = require("./dashboard.routes");
 const device_routes_1 = require("./device.routes");
+const membership_routes_1 = require("./membership.routes");
 const offer_routes_1 = require("./offer.routes");
 const report_routes_1 = require("./report.routes");
 const session_routes_1 = require("./session.routes");
@@ -15,6 +16,7 @@ exports.apiRouter.get("/health", (_req, res) => {
 exports.apiRouter.use("/auth", auth_routes_1.authRouter);
 exports.apiRouter.use("/devices", device_routes_1.deviceRouter);
 exports.apiRouter.use("/sessions", session_routes_1.sessionRouter);
+exports.apiRouter.use("/memberships", membership_routes_1.membershipRouter);
 exports.apiRouter.use("/offers", offer_routes_1.offerRouter);
 exports.apiRouter.use("/dashboard", dashboard_routes_1.dashboardRouter);
 exports.apiRouter.use("/reports", report_routes_1.reportRouter);

@@ -46,3 +46,80 @@ export async function listStaff() {
     orderBy: { createdAt: "desc" },
   });
 }
+
+export async function getUserById(id: string) {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true, name: true, role: true, createdAt: true },
+  });
+
+  if (!user) throw new AppError("User not found", 404);
+  return user;
+}
+
+export async function updateUserByAdmin(
+  id: string,
+  data: {
+    email?: string | undefined;
+    password?: string | undefined;
+    name?: string | undefined;
+    role?: UserRole | undefined;
+  },
+) {
+  await getUserById(id);
+
+  if (data.email) {
+    const existing = await prisma.user.findFirst({
+      where: { email: data.email, id: { not: id } },
+      select: { id: true },
+    });
+    if (existing) throw new AppError("Email already in use", 409);
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (data.email) updateData["email"] = data.email;
+  if (data.name) updateData["name"] = data.name;
+  if (data.role) updateData["role"] = data.role;
+  if (data.password) {
+    updateData["passwordHash"] = await bcrypt.hash(data.password, 12);
+  }
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: updateData,
+    select: { id: true, email: true, name: true, role: true, createdAt: true },
+  });
+
+  return user;
+}
+
+export async function deleteUserByAdmin(id: string, actingUserId: string) {
+  if (id === actingUserId) {
+    throw new AppError(
+      "Use account settings to manage your own admin account",
+      400,
+    );
+  }
+
+  await getUserById(id);
+
+  const activeSessions = await prisma.session.count({
+    where: { staffId: id, status: "ACTIVE" },
+  });
+  if (activeSessions > 0) {
+    throw new AppError("Cannot delete a user with active sessions", 400);
+  }
+
+  await prisma.user.delete({ where: { id } });
+}
+
+export async function updateOwnAccount(
+  id: string,
+  data: {
+    email?: string | undefined;
+    password?: string | undefined;
+    name?: string | undefined;
+  },
+) {
+  return updateUserByAdmin(id, data);
+}

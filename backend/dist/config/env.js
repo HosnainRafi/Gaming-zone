@@ -11,11 +11,22 @@ const envSchema = zod_1.z.object({
     JWT_SECRET: zod_1.z.string().min(16),
     CORS_ORIGIN: zod_1.z.string().optional(),
 });
-exports.env = envSchema.parse({
-    NODE_ENV: process.env.NODE_ENV,
-    PORT: process.env.PORT,
-    DATABASE_URL: process.env.DATABASE_URL,
-    JWT_SECRET: process.env.JWT_SECRET,
-    CORS_ORIGIN: process.env.CORS_ORIGIN,
+let _env = null;
+function getEnv() {
+    if (!_env) {
+        _env = envSchema.parse({
+            NODE_ENV: process.env.NODE_ENV,
+            PORT: process.env.PORT,
+            DATABASE_URL: process.env.DATABASE_URL,
+            JWT_SECRET: process.env.JWT_SECRET,
+            CORS_ORIGIN: process.env.CORS_ORIGIN,
+        });
+    }
+    return _env;
+}
+exports.env = new Proxy({}, {
+    get(_target, prop) {
+        return getEnv()[prop];
+    },
 });
 //# sourceMappingURL=env.js.map

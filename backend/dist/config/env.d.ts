@@ -11,6 +11,12 @@ declare const envSchema: z.ZodObject<{
     CORS_ORIGIN: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export type Env = z.infer<typeof envSchema>;
-export declare const env: Env;
+export declare const env: {
+    NODE_ENV: "development" | "test" | "production";
+    PORT: number;
+    DATABASE_URL: string;
+    JWT_SECRET: string;
+    CORS_ORIGIN?: string | undefined;
+};
 export {};
 //# sourceMappingURL=env.d.ts.map

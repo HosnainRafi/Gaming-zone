@@ -7,6 +7,7 @@ import { SocketProvider } from "./context/SocketContext";
 import DashboardPage from "./pages/DashboardPage";
 import DevicesPage from "./pages/DevicesPage";
 import LoginPage from "./pages/LoginPage";
+import MembersPage from "./pages/MembersPage";
 import OffersPage from "./pages/OffersPage";
 import ReportsPage from "./pages/ReportsPage";
 import SessionsPage from "./pages/SessionsPage";
@@ -40,6 +41,7 @@ function AppRoutes() {
                 <Routes>
                   <Route path="/" element={<DashboardPage />} />
                   <Route path="/devices" element={<DevicesPage />} />
+                  <Route path="/members" element={<MembersPage />} />
                   <Route path="/sessions" element={<SessionsPage />} />
                   <Route path="/offers" element={<OffersPage />} />
                   <Route path="/reports" element={<ReportsPage />} />

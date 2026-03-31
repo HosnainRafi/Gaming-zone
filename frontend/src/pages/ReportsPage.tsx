@@ -73,7 +73,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl border border-[#1e1e30] bg-[#0f0f1a] p-1 w-fit">
+      <div className="flex w-fit gap-1 rounded-xl border border-gz-border bg-gz-surface p-1">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -140,11 +140,15 @@ interface SalesData {
   count: number;
   transactions: {
     id: string;
+    type: "SESSION" | "MEMBERSHIP";
+    label: string;
+    secondary: string;
+    customerName: string | null;
+    staffName: string | null;
     amount: number;
     discount: number;
     paymentMethod: string;
     createdAt: string;
-    session: { device: { name: string; type: string } };
   }[];
 }
 
@@ -176,8 +180,10 @@ function SalesReport({ data }: { data: SalesData }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1e1e30] text-left text-xs uppercase tracking-widest text-slate-500">
-                <th className="pb-3 pr-4">Device</th>
+              <tr className="border-b border-gz-border text-left text-xs uppercase tracking-widest text-slate-500">
+                <th className="pb-3 pr-4">Source</th>
+                <th className="pb-3 pr-4">Customer</th>
+                <th className="pb-3 pr-4">Staff</th>
                 <th className="pb-3 pr-4">Amount</th>
                 <th className="pb-3 pr-4">Discount</th>
                 <th className="pb-3 pr-4">Payment</th>
@@ -186,9 +192,18 @@ function SalesReport({ data }: { data: SalesData }) {
             </thead>
             <tbody className="divide-y divide-[#1a1a28]">
               {data.transactions.map((t) => (
-                <tr key={t.id} className="hover:bg-white/[0.02] transition">
+                <tr key={t.id} className="transition hover:bg-white/2">
                   <td className="py-2.5 pr-4 text-slate-200">
-                    {t.session.device.name}
+                    <div>{t.label}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {t.type === "MEMBERSHIP" ? t.secondary : t.secondary}
+                    </div>
+                  </td>
+                  <td className="py-2.5 pr-4 text-slate-400">
+                    {t.customerName ?? "—"}
+                  </td>
+                  <td className="py-2.5 pr-4 text-slate-400">
+                    {t.staffName ?? "—"}
                   </td>
                   <td className="py-2.5 pr-4 text-green-400 font-medium">
                     {formatBDT(t.amount)}
@@ -216,6 +231,7 @@ interface StaffEntry {
   staffId: string;
   name: string;
   sessions: number;
+  memberships: number;
   revenue: number;
 }
 function StaffReport({ data }: { data: StaffEntry[] }) {
@@ -258,17 +274,19 @@ function StaffReport({ data }: { data: StaffEntry[] }) {
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#1e1e30] text-xs uppercase tracking-widest text-slate-500 text-left">
+            <tr className="border-b border-gz-border text-left text-xs uppercase tracking-widest text-slate-500">
               <th className="pb-3 pr-4">Staff</th>
               <th className="pb-3 pr-4">Sessions</th>
+              <th className="pb-3 pr-4">Memberships</th>
               <th className="pb-3">Revenue</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1a1a28]">
             {data.map((d) => (
-              <tr key={d.staffId} className="hover:bg-white/[0.02] transition">
+              <tr key={d.staffId} className="transition hover:bg-white/2">
                 <td className="py-2.5 pr-4 text-slate-200">{d.name}</td>
                 <td className="py-2.5 pr-4 text-slate-400">{d.sessions}</td>
+                <td className="py-2.5 pr-4 text-slate-400">{d.memberships}</td>
                 <td className="py-2.5 text-green-400 font-medium">
                   {formatBDT(d.revenue)}
                 </td>
@@ -332,7 +350,7 @@ function DeviceReport({ data }: { data: DeviceEntry[] }) {
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#1e1e30] text-xs uppercase tracking-widest text-slate-500 text-left">
+            <tr className="border-b border-gz-border text-left text-xs uppercase tracking-widest text-slate-500">
               <th className="pb-3 pr-4">Device</th>
               <th className="pb-3 pr-4">Type</th>
               <th className="pb-3 pr-4">Sessions</th>
@@ -342,7 +360,7 @@ function DeviceReport({ data }: { data: DeviceEntry[] }) {
           </thead>
           <tbody className="divide-y divide-[#1a1a28]">
             {data.map((d) => (
-              <tr key={d.deviceId} className="hover:bg-white/[0.02] transition">
+              <tr key={d.deviceId} className="transition hover:bg-white/2">
                 <td className="py-2.5 pr-4 text-slate-200">{d.name}</td>
                 <td className="py-2.5 pr-4 text-slate-500">{d.type}</td>
                 <td className="py-2.5 pr-4 text-slate-400">{d.sessions}</td>
@@ -379,7 +397,7 @@ function SessionsReport({ data }: { data: SessionEntry[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#1e1e30] text-xs uppercase tracking-widest text-slate-500 text-left">
+            <tr className="border-b border-gz-border text-left text-xs uppercase tracking-widest text-slate-500">
               <th className="pb-3 pr-4">Device</th>
               <th className="pb-3 pr-4">Staff</th>
               <th className="pb-3 pr-4">Start</th>
@@ -390,7 +408,7 @@ function SessionsReport({ data }: { data: SessionEntry[] }) {
           </thead>
           <tbody className="divide-y divide-[#1a1a28]">
             {data.map((s) => (
-              <tr key={s.id} className="hover:bg-white/[0.02] transition">
+              <tr key={s.id} className="transition hover:bg-white/2">
                 <td className="py-2.5 pr-4 text-slate-200">{s.device.name}</td>
                 <td className="py-2.5 pr-4 text-slate-400">
                   {s.staff.name ?? "—"}

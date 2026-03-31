@@ -1,38 +1,67 @@
 import { prisma } from "../prisma/client";
 
 export async function getSalesReport(from: Date, to: Date) {
-  const transactions = await prisma.transaction.findMany({
-    where: { createdAt: { gte: from, lte: to } },
-    include: {
-      session: {
-        include: {
-          device: { select: { name: true, type: true } },
-          staff: { select: { name: true } },
+  const [transactions, membershipSales] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { createdAt: { gte: from, lte: to } },
+      include: {
+        session: {
+          include: {
+            device: { select: { name: true, type: true } },
+            staff: { select: { name: true } },
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.membershipSale.findMany({
+      where: { createdAt: { gte: from, lte: to } },
+      include: {
+        customer: { select: { name: true, phone: true } },
+        staff: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
-  const total = transactions.reduce((s, t) => s + Number(t.amount), 0);
-  const totalDiscount = transactions.reduce(
-    (s, t) => s + Number(t.discount),
-    0,
+  const sessionRows = transactions.map((t) => ({
+    id: t.id,
+    type: "SESSION" as const,
+    label: t.session.device.name,
+    secondary: t.session.device.type,
+    customerName: t.session.customerName,
+    staffName: t.session.staff.name,
+    amount: Number(t.amount),
+    discount: Number(t.discount),
+    paymentMethod: t.paymentMethod,
+    createdAt: t.createdAt,
+  }));
+
+  const membershipRows = membershipSales.map((sale) => ({
+    id: sale.id,
+    type: "MEMBERSHIP" as const,
+    label: sale.planName,
+    secondary: "Membership sale",
+    customerName: sale.customer.name,
+    staffName: sale.staff.name,
+    amount: Number(sale.amount),
+    discount: 0,
+    paymentMethod: sale.paymentMethod,
+    createdAt: sale.createdAt,
+  }));
+
+  const allSales = [...sessionRows, ...membershipRows].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
   );
 
+  const total = allSales.reduce((sum, sale) => sum + sale.amount, 0);
+  const totalDiscount = allSales.reduce((sum, sale) => sum + sale.discount, 0);
+
   return {
-    transactions: transactions.map((t) => ({
-      ...t,
-      amount: Number(t.amount),
-      discount: Number(t.discount),
-      session: {
-        ...t.session,
-        totalAmount: Number(t.session.totalAmount),
-      },
-    })),
+    transactions: allSales,
     total,
     totalDiscount,
-    count: transactions.length,
+    count: allSales.length,
   };
 }
 
@@ -74,27 +103,48 @@ export async function getSessionsReport(filters: {
 }
 
 export async function getStaffReport(from: Date, to: Date) {
-  const sessions = await prisma.session.findMany({
-    where: { startTime: { gte: from, lte: to } },
-    include: {
-      staff: { select: { id: true, name: true } },
-      transaction: true,
-    },
-  });
+  const [sessions, membershipSales] = await Promise.all([
+    prisma.session.findMany({
+      where: { startTime: { gte: from, lte: to } },
+      include: {
+        staff: { select: { id: true, name: true } },
+        transaction: true,
+      },
+    }),
+    prisma.membershipSale.findMany({
+      where: { createdAt: { gte: from, lte: to } },
+      include: {
+        staff: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
 
   const map = new Map<
     string,
-    { name: string; sessions: number; revenue: number }
+    { name: string; sessions: number; memberships: number; revenue: number }
   >();
   for (const s of sessions) {
     const prev = map.get(s.staffId) ?? {
       name: s.staff.name ?? "Unknown",
       sessions: 0,
+      memberships: 0,
       revenue: 0,
     };
     prev.sessions += 1;
     prev.revenue += s.transaction ? Number(s.transaction.amount) : 0;
     map.set(s.staffId, prev);
+  }
+
+  for (const sale of membershipSales) {
+    const prev = map.get(sale.staffId) ?? {
+      name: sale.staff.name ?? "Unknown",
+      sessions: 0,
+      memberships: 0,
+      revenue: 0,
+    };
+    prev.memberships += 1;
+    prev.revenue += Number(sale.amount);
+    map.set(sale.staffId, prev);
   }
 
   return Array.from(map.entries()).map(([staffId, d]) => ({ staffId, ...d }));

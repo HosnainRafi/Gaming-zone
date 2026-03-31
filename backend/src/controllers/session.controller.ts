@@ -13,9 +13,14 @@ import { AppError } from "../utils/AppError";
 const startSchema = z.object({
   deviceId: z.string().min(1),
   durationMinutes: z.number().int().min(30),
+  pricingType: z
+    .enum(["STANDARD", "MEMBERSHIP", "FIRST_TIME_FREE"])
+    .default("STANDARD"),
   paymentMethod: z.enum(["CASH", "CARD", "MOBILE_WALLET", "OTHER"]),
   offerCode: z.string().optional(),
-  customerName: z.string().max(100).optional(),
+  customerName: z.string().min(1).max(100),
+  customerPhone: z.string().min(10).max(20).optional().or(z.literal("")),
+  playerCount: z.number().int().min(1).max(4).default(1),
   cashPaid: z.number().min(0).optional(),
 });
 
@@ -29,9 +34,12 @@ export async function createSession(
     data.deviceId,
     req.user.userId,
     data.durationMinutes,
+    data.pricingType,
     data.paymentMethod,
     data.offerCode,
     data.customerName,
+    data.customerPhone,
+    data.playerCount,
     data.cashPaid,
   );
   res.status(201).json(session);

@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import {
   Clock,
+  CreditCard,
   Gamepad2,
   MonitorPlay,
   Pencil,
@@ -12,8 +13,13 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { deviceApi, type Device } from "../api/devices";
+import { membershipApi, type MemberLookup } from "../api/memberships";
 import { offerApi, type OfferValidation } from "../api/offers";
-import type { PaymentMethod, Session } from "../api/sessions";
+import type {
+  PaymentMethod,
+  Session,
+  SessionPricingType,
+} from "../api/sessions";
 import { sessionApi } from "../api/sessions";
 import { PrintReceipt } from "../components/PrintReceipt";
 import { Badge } from "../components/ui/Badge";
@@ -52,11 +58,26 @@ const DEVICE_TYPES = [
 
 interface StartForm {
   customerName: string;
+  customerPhone: string;
   durationMinutes: number;
   customMinutes: string;
+  pricingType: SessionPricingType;
+  playerCount: number;
   paymentMethod: PaymentMethod;
   offerCode: string;
   cashPaid: string;
+}
+
+function isConsoleDevice(type: string) {
+  const normalizedType = type.toUpperCase();
+  return normalizedType.includes("PS4") || normalizedType.includes("PS5");
+}
+
+function getExtraPlayerHourlyRate(type: string) {
+  const normalizedType = type.toUpperCase();
+  if (normalizedType.includes("PS4")) return 50;
+  if (normalizedType.includes("PS5")) return 60;
+  return 0;
 }
 
 export default function DevicesPage() {
@@ -70,14 +91,19 @@ export default function DevicesPage() {
   const [startDevice, setStartDevice] = useState<Device | null>(null);
   const [form, setForm] = useState<StartForm>({
     customerName: "",
+    customerPhone: "",
     durationMinutes: 60,
     customMinutes: "60",
+    pricingType: "STANDARD",
+    playerCount: 1,
     paymentMethod: "CASH",
     offerCode: "",
     cashPaid: "",
   });
   const [offerResult, setOfferResult] = useState<OfferValidation | null>(null);
   const [offerChecking, setOfferChecking] = useState(false);
+  const [memberLookup, setMemberLookup] = useState<MemberLookup | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [startLoading, setStartLoading] = useState(false);
   const [receiptSession, setReceiptSession] = useState<Session | null>(null);
 
@@ -123,22 +149,68 @@ export default function DevicesPage() {
     form.durationMinutes === -1
       ? parseInt(form.customMinutes) || 0
       : form.durationMinutes;
-  const basePrice = startDevice
-    ? calcPrice(startDevice.hourlyRate, effectiveMinutes)
+  const extraPlayerHourlyRate =
+    startDevice && isConsoleDevice(startDevice.type) && form.playerCount > 2
+      ? getExtraPlayerHourlyRate(startDevice.type) * (form.playerCount - 2)
+      : 0;
+  const effectiveHourlyRate = startDevice
+    ? startDevice.hourlyRate + extraPlayerHourlyRate
     : 0;
-  const finalPrice = offerResult ? offerResult.finalAmount : basePrice;
+  const basePrice = startDevice
+    ? calcPrice(effectiveHourlyRate, effectiveMinutes)
+    : 0;
+  const firstFreeDiscount =
+    form.pricingType === "FIRST_TIME_FREE"
+      ? calcPrice(effectiveHourlyRate, Math.min(30, effectiveMinutes))
+      : 0;
+  const subtotalBeforeOffer =
+    form.pricingType === "MEMBERSHIP"
+      ? 0
+      : Math.max(0, basePrice - firstFreeDiscount);
+  const finalPrice =
+    form.pricingType === "MEMBERSHIP"
+      ? 0
+      : offerResult
+        ? offerResult.finalAmount
+        : subtotalBeforeOffer;
+
+  async function handleLookupMember() {
+    if (!form.customerPhone.trim()) {
+      setMemberLookup(null);
+      return;
+    }
+
+    setLookupLoading(true);
+    try {
+      const result = await membershipApi.lookup(form.customerPhone.trim());
+      setMemberLookup(result);
+      setForm((current) => ({
+        ...current,
+        customerName: current.customerName || result.name,
+      }));
+    } catch {
+      setMemberLookup(null);
+    } finally {
+      setLookupLoading(false);
+    }
+  }
 
   // --- Offer validation ---
   async function validateOffer() {
-    if (!form.offerCode.trim() || !startDevice) return;
+    if (
+      !form.offerCode.trim() ||
+      !startDevice ||
+      form.pricingType === "MEMBERSHIP"
+    )
+      return;
     setOfferChecking(true);
     setOfferResult(null);
     try {
       const result = await offerApi.validate(
         form.offerCode,
-        basePrice,
+        subtotalBeforeOffer,
         effectiveMinutes,
-        startDevice.hourlyRate,
+        effectiveHourlyRate,
       );
       setOfferResult(result);
       toast.success(`Offer applied: -${formatBDT(result.discount)}`);
@@ -159,6 +231,43 @@ export default function DevicesPage() {
       toast.error("Minimum 30 minutes required");
       return;
     }
+
+    if (!form.customerName.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+
+    if (
+      (form.pricingType === "MEMBERSHIP" ||
+        form.pricingType === "FIRST_TIME_FREE") &&
+      !form.customerPhone.trim()
+    ) {
+      toast.error("Phone number is required for membership and free play");
+      return;
+    }
+
+    if (!isConsoleDevice(startDevice.type) && form.playerCount !== 1) {
+      toast.error("Only PS4 and PS5 support multiple players");
+      return;
+    }
+
+    if (
+      form.pricingType === "MEMBERSHIP" &&
+      (!memberLookup?.activeMembership ||
+        memberLookup.activeMembership.remainingMinutes < effectiveMinutes)
+    ) {
+      toast.error("No active membership with enough remaining time");
+      return;
+    }
+
+    if (
+      form.pricingType === "FIRST_TIME_FREE" &&
+      memberLookup?.hasClaimedFirstFree
+    ) {
+      toast.error("This customer has already used first-time free play");
+      return;
+    }
+
     const cashPaidNum = form.cashPaid ? parseFloat(form.cashPaid) : finalPrice;
     if (form.paymentMethod === "CASH" && cashPaidNum < finalPrice) {
       toast.error("Cash paid cannot be less than total amount");
@@ -169,14 +278,21 @@ export default function DevicesPage() {
       const session = await sessionApi.start({
         deviceId: startDevice.id,
         durationMinutes: effectiveMinutes,
+        pricingType: form.pricingType,
         paymentMethod: form.paymentMethod,
-        offerCode: form.offerCode.trim() || undefined,
-        customerName: form.customerName.trim() || undefined,
-        cashPaid: cashPaidNum,
+        offerCode:
+          form.pricingType === "STANDARD"
+            ? form.offerCode.trim() || undefined
+            : undefined,
+        customerName: form.customerName.trim(),
+        customerPhone: form.customerPhone.trim() || undefined,
+        playerCount: form.playerCount,
+        cashPaid: form.pricingType === "MEMBERSHIP" ? 0 : cashPaidNum,
       });
       toast.success(`Session started on ${startDevice.name}`);
       setStartDevice(null);
       setOfferResult(null);
+      setMemberLookup(null);
       setReceiptSession(session);
       void loadDevices(true);
     } catch (err: unknown) {
@@ -336,12 +452,16 @@ export default function DevicesPage() {
                   setStartDevice(d);
                   setForm({
                     customerName: "",
+                    customerPhone: "",
                     durationMinutes: 60,
                     customMinutes: "60",
+                    pricingType: "STANDARD",
+                    playerCount: 1,
                     paymentMethod: "CASH",
                     offerCode: "",
                     cashPaid: "",
                   });
+                  setMemberLookup(null);
                   setOfferResult(null);
                 }}
                 onEdit={user?.role === "ADMIN" ? openEditDevice : undefined}
@@ -394,18 +514,50 @@ export default function DevicesPage() {
       >
         {startDevice && (
           <div className="space-y-5">
-            {/* Customer name */}
             <Input
               label="Customer Name"
-              placeholder="e.g. Rafi (required for receipt)"
+              placeholder="e.g. Rafi"
               value={form.customerName}
               onChange={(e) =>
                 setForm((f) => ({ ...f, customerName: e.target.value }))
               }
             />
 
-            {/* Device info */}
-            <div className="rounded-lg border border-[#1e1e30] bg-[#0f0f1a] px-4 py-3 flex items-center justify-between">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                Phone Number (optional)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 rounded-lg border border-gz-border bg-gz-surface px-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none transition focus:border-violet-500/70 focus:ring-1 focus:ring-violet-500/30"
+                  placeholder="Needed for membership or free play"
+                  value={form.customerPhone}
+                  onChange={(e) => {
+                    setForm((f) => ({
+                      ...f,
+                      customerPhone: e.target.value,
+                      pricingType:
+                        f.pricingType === "MEMBERSHIP"
+                          ? "STANDARD"
+                          : f.pricingType,
+                    }));
+                    setOfferResult(null);
+                    setMemberLookup(null);
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLookupMember}
+                  loading={lookupLoading}
+                  disabled={!form.customerPhone.trim()}
+                >
+                  Lookup
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-gz-border bg-gz-surface px-4 py-3">
               <div>
                 <p className="font-semibold text-white">{startDevice.name}</p>
                 <p className="text-xs text-slate-500">{startDevice.type}</p>
@@ -413,7 +565,7 @@ export default function DevicesPage() {
               <div className="text-right">
                 <p className="text-xs text-slate-500">Hourly Rate</p>
                 <p className="font-display text-lg font-bold text-violet-400">
-                  {formatBDT(startDevice.hourlyRate)}
+                  {formatBDT(effectiveHourlyRate)}
                   <span className="text-xs font-normal text-slate-500">
                     /hr
                   </span>
@@ -421,7 +573,50 @@ export default function DevicesPage() {
               </div>
             </div>
 
-            {/* Time slot */}
+            {memberLookup && (
+              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 text-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium text-white">
+                      {memberLookup.name}
+                    </p>
+                    <p className="text-slate-400">{memberLookup.phone}</p>
+                  </div>
+                  <span className="rounded-full border border-gz-border bg-gz-surface px-2 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                    {memberLookup.hasClaimedFirstFree
+                      ? "Free used"
+                      : "Free available"}
+                  </span>
+                </div>
+                {memberLookup.activeMembership ? (
+                  <div className="mt-3 flex items-center justify-between rounded-lg border border-gz-border bg-gz-surface px-3 py-2">
+                    <div>
+                      <p className="text-slate-200">
+                        {memberLookup.activeMembership.planName ??
+                          memberLookup.activeMembership.planType ??
+                          "Membership"}{" "}
+                        membership
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Expires{" "}
+                        {new Date(
+                          memberLookup.activeMembership.expiresAt,
+                        ).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <p className="text-cyan-400">
+                      {memberLookup.activeMembership.remainingHours} hours left
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-center gap-2 text-slate-400">
+                    <CreditCard size={14} className="text-violet-400" />
+                    No active membership.
+                  </div>
+                )}
+              </div>
+            )}
+
             <Select
               label="Time Slot"
               options={TIME_SLOTS.map((t) => ({
@@ -450,11 +645,70 @@ export default function DevicesPage() {
               />
             )}
 
-            {/* Payment method */}
+            <Select
+              label="Pricing Mode"
+              value={form.pricingType}
+              options={[
+                { value: "STANDARD", label: "Standard billing" },
+                ...(!memberLookup || !memberLookup.hasClaimedFirstFree
+                  ? [
+                      {
+                        value: "FIRST_TIME_FREE",
+                        label: "First-time free 30 min (phone required)",
+                      },
+                    ]
+                  : []),
+                ...(memberLookup?.activeMembership
+                  ? [{ value: "MEMBERSHIP", label: "Use active membership" }]
+                  : []),
+              ]}
+              onChange={(e) => {
+                setForm((f) => ({
+                  ...f,
+                  pricingType: e.target.value as SessionPricingType,
+                  offerCode: e.target.value === "STANDARD" ? f.offerCode : "",
+                }));
+                setOfferResult(null);
+              }}
+            />
+
+            <Select
+              label="Players"
+              value={form.playerCount}
+              options={
+                isConsoleDevice(startDevice.type)
+                  ? [
+                      { value: 1, label: "1 player" },
+                      { value: 2, label: "2 players included" },
+                      {
+                        value: 3,
+                        label: startDevice.type.toUpperCase().includes("PS4")
+                          ? "3 players · extra controller + Tk 50/hr"
+                          : "3 players · extra controller + Tk 60/hr",
+                      },
+                      {
+                        value: 4,
+                        label: startDevice.type.toUpperCase().includes("PS4")
+                          ? "4 players · 2 extra controllers + Tk 100/hr"
+                          : "4 players · 2 extra controllers + Tk 120/hr",
+                      },
+                    ]
+                  : [{ value: 1, label: "1 player" }]
+              }
+              onChange={(e) => {
+                setForm((f) => ({
+                  ...f,
+                  playerCount: parseInt(e.target.value),
+                }));
+                setOfferResult(null);
+              }}
+            />
+
             <Select
               label="Payment Method"
               options={PAYMENT_METHODS}
               value={form.paymentMethod}
+              disabled={form.pricingType === "MEMBERSHIP"}
               onChange={(e) =>
                 setForm((f) => ({
                   ...f,
@@ -463,45 +717,45 @@ export default function DevicesPage() {
               }
             />
 
-            {/* Offer code */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                Offer Code (optional)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  className="flex-1 rounded-lg border border-[#1e1e30] bg-[#0f0f1a] px-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-violet-500/70 focus:ring-1 focus:ring-violet-500/30 transition"
-                  placeholder="e.g. GAMEON20"
-                  value={form.offerCode}
-                  onChange={(e) => {
-                    setForm((f) => ({ ...f, offerCode: e.target.value }));
-                    setOfferResult(null);
-                  }}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={validateOffer}
-                  loading={offerChecking}
-                  disabled={!form.offerCode.trim()}
-                >
-                  Apply
-                </Button>
+            {form.pricingType === "STANDARD" && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                  Offer Code (optional)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 rounded-lg border border-gz-border bg-gz-surface px-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none transition focus:border-violet-500/70 focus:ring-1 focus:ring-violet-500/30"
+                    placeholder="e.g. GAMEON20"
+                    value={form.offerCode}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, offerCode: e.target.value }));
+                      setOfferResult(null);
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={validateOffer}
+                    loading={offerChecking}
+                    disabled={!form.offerCode.trim()}
+                  >
+                    Apply
+                  </Button>
+                </div>
+                {offerResult && (
+                  <p className="text-xs text-green-400">
+                    ✓ -{formatBDT(offerResult.discount)} (
+                    {offerResult.type === "PERCENT"
+                      ? `${offerResult.value}%`
+                      : offerResult.type === "TIME_BASED"
+                        ? `First ${offerResult.freeMinutes} min free`
+                        : "fixed"}
+                    )
+                  </p>
+                )}
               </div>
-              {offerResult && (
-                <p className="text-xs text-green-400">
-                  ✓ -{formatBDT(offerResult.discount)} (
-                  {offerResult.type === "PERCENT"
-                    ? `${offerResult.value}%`
-                    : offerResult.type === "TIME_BASED"
-                      ? `First ${offerResult.freeMinutes} min free`
-                      : "fixed"}
-                  )
-                </p>
-              )}
-            </div>
+            )}
 
-            {/* Cash Paid (CASH only) */}
             {form.paymentMethod === "CASH" && (
               <Input
                 label="Cash Received (Tk)"
@@ -512,9 +766,11 @@ export default function DevicesPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, cashPaid: e.target.value }))
                 }
+                disabled={form.pricingType === "MEMBERSHIP"}
               />
             )}
             {form.paymentMethod === "CASH" &&
+              form.pricingType !== "MEMBERSHIP" &&
               form.cashPaid &&
               parseFloat(form.cashPaid) >= finalPrice && (
                 <p className="-mt-3 text-xs text-green-400">
@@ -522,7 +778,6 @@ export default function DevicesPage() {
                 </p>
               )}
 
-            {/* Price summary */}
             <div
               className={clsx(
                 "rounded-lg border px-4 py-4 space-y-2",
@@ -544,6 +799,27 @@ export default function DevicesPage() {
                 <span className="text-slate-400">Base Price</span>
                 <span className="text-slate-300">{formatBDT(basePrice)}</span>
               </div>
+              {extraPlayerHourlyRate > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">
+                    Extra controller charge
+                  </span>
+                  <span className="text-slate-300">
+                    +
+                    {formatBDT(
+                      calcPrice(extraPlayerHourlyRate, effectiveMinutes),
+                    )}
+                  </span>
+                </div>
+              )}
+              {firstFreeDiscount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-green-400">First 30 min free</span>
+                  <span className="text-green-400">
+                    -{formatBDT(firstFreeDiscount)}
+                  </span>
+                </div>
+              )}
               {offerResult && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-green-400">Discount</span>
@@ -552,7 +828,7 @@ export default function DevicesPage() {
                   </span>
                 </div>
               )}
-              <div className="flex items-center justify-between border-t border-[#1e1e30] pt-2">
+              <div className="flex items-center justify-between border-t border-gz-border pt-2">
                 <span className="font-semibold text-white">Total</span>
                 <span className="font-display text-xl font-bold text-violet-400">
                   {formatBDT(finalPrice)}
@@ -560,18 +836,18 @@ export default function DevicesPage() {
               </div>
               {effectiveMinutes < 30 && (
                 <p className="text-xs text-red-400 text-center pt-1">
-                  ⚠ Minimum 30 minutes required
+                  Minimum 30 minutes required
                 </p>
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
               <Button
                 variant="ghost"
                 className="flex-1"
                 onClick={() => {
                   setStartDevice(null);
+                  setMemberLookup(null);
                   setOfferResult(null);
                 }}
               >
@@ -697,12 +973,12 @@ function DeviceCard({
   return (
     <div
       className={clsx(
-        "group relative rounded-xl border bg-[#13131f] p-5 flex flex-col gap-4 transition-all duration-200",
+        "group relative flex flex-col gap-4 rounded-xl border bg-gz-card p-5 transition-all duration-200",
         isRunning
           ? "border-violet-500/40 shadow-lg shadow-violet-900/20"
           : isAvailable
-            ? "border-[#1e1e30] hover:border-green-500/30 hover:shadow-lg hover:shadow-green-900/10"
-            : "border-[#1e1e30] opacity-70",
+            ? "border-gz-border hover:border-green-500/30 hover:shadow-lg hover:shadow-green-900/10"
+            : "border-gz-border opacity-70",
       )}
     >
       {/* Top row */}

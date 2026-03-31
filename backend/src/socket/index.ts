@@ -25,9 +25,9 @@ export function initSocket(httpServer: HttpServer): SocketServer {
     socket.emit("connected", { ok: true });
   });
 
-  // Push timer deltas to all clients every second
+  // Push timer deltas to all clients every second (skip if no one is listening)
   setInterval(async () => {
-    if (!_io) return;
+    if (!_io || _io.engine.clientsCount === 0) return;
     try {
       const sessions = await prisma.session.findMany({
         where: { status: "ACTIVE" },

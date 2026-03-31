@@ -32,13 +32,17 @@ export function PrintReceipt({ session, onClose }: Props) {
   const fTk = (n: number) => `${n.toFixed(0)} Tk`;
 
   const paymentLabel =
-    tx?.paymentMethod === "MOBILE_WALLET"
-      ? "Mobile Wallet"
-      : tx?.paymentMethod === "CARD"
-        ? "Card"
-        : tx?.paymentMethod === "OTHER"
-          ? "Other"
-          : "Cash";
+    session.pricingType === "MEMBERSHIP"
+      ? "Membership"
+      : session.pricingType === "FIRST_TIME_FREE" && !tx
+        ? "Free Trial"
+        : tx?.paymentMethod === "MOBILE_WALLET"
+          ? "Mobile Wallet"
+          : tx?.paymentMethod === "CARD"
+            ? "Card"
+            : tx?.paymentMethod === "OTHER"
+              ? "Other"
+              : "Cash";
 
   return (
     <>
@@ -56,7 +60,7 @@ export function PrintReceipt({ session, onClose }: Props) {
             </button>
             <button
               onClick={onClose}
-              className="flex items-center gap-2 rounded-lg border border-[#1e1e30] bg-[#13131f] px-5 py-2.5 text-sm font-semibold text-slate-300 hover:text-white transition"
+              className="flex items-center gap-2 rounded-lg border border-gz-border bg-gz-card px-5 py-2.5 text-sm font-semibold text-slate-300 hover:text-white transition"
             >
               <X size={16} />
               Close
@@ -72,11 +76,15 @@ export function PrintReceipt({ session, onClose }: Props) {
               zoneWeb={ZONE_WEB}
               receiptNo={receiptNo}
               customerName={session.customerName}
+              customerPhone={session.customerPhone}
               staffName={session.staff?.name ?? null}
               date={fDate(startTime)}
               time={fTime(startTime)}
               deviceName={session.device.name}
               deviceType={session.device.type}
+              playerCount={session.playerCount}
+              pricingType={session.pricingType}
+              appliedOfferCode={session.appliedOfferCode}
               hourlyRate={session.device.hourlyRate}
               startStr={fTime(startTime)}
               endStr={fTime(endTime)}
@@ -102,11 +110,15 @@ export function PrintReceipt({ session, onClose }: Props) {
             zoneWeb={ZONE_WEB}
             receiptNo={receiptNo}
             customerName={session.customerName}
+            customerPhone={session.customerPhone}
             staffName={session.staff?.name ?? null}
             date={fDate(startTime)}
             time={fTime(startTime)}
             deviceName={session.device.name}
             deviceType={session.device.type}
+            playerCount={session.playerCount}
+            pricingType={session.pricingType}
+            appliedOfferCode={session.appliedOfferCode}
             hourlyRate={session.device.hourlyRate}
             startStr={fTime(startTime)}
             endStr={fTime(endTime)}
@@ -132,11 +144,15 @@ interface ContentProps {
   zoneWeb: string;
   receiptNo: number;
   customerName: string | null;
+  customerPhone: string | null;
   staffName: string | null;
   date: string;
   time: string;
   deviceName: string;
   deviceType: string;
+  playerCount: number;
+  pricingType: string;
+  appliedOfferCode: string | null;
   hourlyRate: number;
   startStr: string;
   endStr: string;
@@ -201,6 +217,12 @@ function ReceiptContent(p: ContentProps) {
             </span>
           </div>
         )}
+        {p.customerPhone && (
+          <div>
+            <span className="receipt-label">Phone: </span>
+            <span>{p.customerPhone}</span>
+          </div>
+        )}
         {p.staffName && (
           <div>
             <span className="receipt-label">Staff: </span>
@@ -233,6 +255,17 @@ function ReceiptContent(p: ContentProps) {
       {/* Summary */}
       <div className="receipt-section-title">SUMMARY</div>
       <Row label={`Total ${p.deviceType} Time:`} value={p.durationLabel} />
+      <Row label="Players:" value={String(p.playerCount)} />
+      <Row
+        label="Mode:"
+        value={
+          p.pricingType === "FIRST_TIME_FREE"
+            ? "First Free"
+            : p.pricingType === "MEMBERSHIP"
+              ? "Membership"
+              : (p.appliedOfferCode ?? "Standard")
+        }
+      />
 
       {p.discount > 0 && (
         <Row label="Discount:" value={`-${fTk(p.discount)}`} />

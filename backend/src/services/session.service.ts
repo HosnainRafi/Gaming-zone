@@ -1,9 +1,110 @@
-import type { PaymentMethod } from "@prisma/client";
+import type { PaymentMethod, Prisma, SessionPricingType } from "@prisma/client";
 
 import { prisma } from "../prisma/client";
 import { AppError } from "../utils/AppError";
+import {
+  findCustomerMembershipSnapshot,
+  normalizePhone,
+  upsertCustomerProfile,
+} from "./customer.service";
 
 const MIN_DURATION = 30;
+const FIRST_FREE_MINUTES = 30;
+
+function isConsole(type: string) {
+  const normalizedType = type.toUpperCase();
+  return normalizedType.includes("PS4") || normalizedType.includes("PS5");
+}
+
+function getExtraPlayerHourlyRate(type: string) {
+  const normalizedType = type.toUpperCase();
+  if (normalizedType.includes("PS4")) return 50;
+  if (normalizedType.includes("PS5")) return 60;
+  return 0;
+}
+
+function validatePlayerCount(type: string, playerCount: number) {
+  if (isConsole(type)) {
+    if (playerCount > 4) {
+      throw new AppError("PS4 and PS5 sessions support up to 4 players", 400);
+    }
+    return;
+  }
+
+  if (playerCount !== 1) {
+    throw new AppError("Only PS4 and PS5 support multiple players", 400);
+  }
+}
+
+function serializeTransaction<
+  T extends { amount: unknown; discount: unknown; cashPaid: unknown },
+>(transaction: T) {
+  return {
+    ...transaction,
+    amount: Number(transaction.amount),
+    discount: Number(transaction.discount),
+    cashPaid: Number(transaction.cashPaid),
+  };
+}
+
+function serializeSessionRecord<
+  T extends {
+    totalAmount: unknown;
+    baseAmount: unknown;
+    appliedDiscount: unknown;
+    device?: { hourlyRate: unknown };
+    transaction?: {
+      amount: unknown;
+      discount: unknown;
+      cashPaid: unknown;
+    } | null;
+  },
+>(session: T) {
+  return {
+    ...session,
+    totalAmount: Number(session.totalAmount),
+    baseAmount: Number(session.baseAmount),
+    appliedDiscount: Number(session.appliedDiscount),
+    device: session.device
+      ? { ...session.device, hourlyRate: Number(session.device.hourlyRate) }
+      : session.device,
+    transaction: session.transaction
+      ? serializeTransaction(session.transaction)
+      : null,
+  };
+}
+
+async function applyOfferDiscount(
+  offerCode: string | undefined,
+  baseAmount: number,
+  durationMinutes: number,
+  hourlyRate: number,
+) {
+  if (!offerCode)
+    return { discount: 0, appliedOfferCode: null as string | null };
+
+  const offer = await prisma.offer.findUnique({
+    where: { code: offerCode.toUpperCase() },
+  });
+  if (!offer) throw new AppError("Invalid offer code", 400);
+  if (!offer.isActive) throw new AppError("Offer is not active", 400);
+  if (offer.expiry < new Date()) throw new AppError("Offer has expired", 400);
+
+  let discount = 0;
+  if (offer.type === "PERCENT") {
+    discount = baseAmount * (Number(offer.value) / 100);
+  } else if (offer.type === "FIXED") {
+    discount = Number(offer.value);
+  } else {
+    const freeMinutes = Math.min(offer.freeMinutes ?? 0, durationMinutes);
+    discount = (hourlyRate / 60) * freeMinutes;
+  }
+
+  return {
+    discount: Math.min(discount, baseAmount),
+    appliedOfferCode: offer.code,
+  };
+}
 
 function serializeSession(session: Record<string, unknown>) {
   return {
@@ -16,9 +117,12 @@ export async function startSession(
   deviceId: string,
   staffId: string,
   durationMinutes: number,
+  pricingType: SessionPricingType,
   paymentMethod: PaymentMethod,
   offerCode?: string,
   customerName?: string,
+  customerPhone?: string,
+  playerCount = 1,
   cashPaid?: number,
 ) {
   if (durationMinutes < MIN_DURATION) {
@@ -37,29 +141,78 @@ export async function startSession(
     );
   }
 
-  const hourlyRate = Number(device.hourlyRate);
-  const basePrice = (hourlyRate / 60) * durationMinutes;
+  if (!customerName?.trim()) {
+    throw new AppError("Customer name is required", 400);
+  }
+
+  validatePlayerCount(device.type, playerCount);
+
+  const shouldTrackCustomer = Boolean(customerPhone?.trim());
+  const normalizedPhone = shouldTrackCustomer
+    ? normalizePhone(customerPhone as string)
+    : null;
+  const customer = shouldTrackCustomer
+    ? await upsertCustomerProfile(customerName, customerPhone as string)
+    : null;
+
+  const extraPlayerHourlyRate =
+    isConsole(device.type) && playerCount > 2
+      ? getExtraPlayerHourlyRate(device.type) * (playerCount - 2)
+      : 0;
+  const effectiveHourlyRate = Number(device.hourlyRate) + extraPlayerHourlyRate;
+  const basePrice = (effectiveHourlyRate / 60) * durationMinutes;
 
   let discount = 0;
-  if (offerCode) {
-    const offer = await prisma.offer.findUnique({
-      where: { code: offerCode.toUpperCase() },
-    });
-    if (!offer) throw new AppError("Invalid offer code", 400);
-    if (!offer.isActive) throw new AppError("Offer is not active", 400);
-    if (offer.expiry < new Date()) throw new AppError("Offer has expired", 400);
-    if (offer.type === "PERCENT") {
-      discount = basePrice * (Number(offer.value) / 100);
-    } else if (offer.type === "FIXED") {
-      discount = Number(offer.value);
-    } else if (offer.type === "TIME_BASED") {
-      const free = offer.freeMinutes ?? 0;
-      if (free > 0) {
-        const freeMin = Math.min(free, durationMinutes);
-        discount = (hourlyRate / 60) * freeMin;
-      }
+  let appliedOfferCode: string | null = null;
+
+  let membershipId: string | null = null;
+
+  if (pricingType === "MEMBERSHIP") {
+    if (!normalizedPhone) {
+      throw new AppError("Phone number is required to use membership", 400);
     }
-    discount = Math.min(discount, basePrice);
+    const membershipSnapshot =
+      await findCustomerMembershipSnapshot(normalizedPhone);
+    const activeMembership = membershipSnapshot?.activeMembership;
+
+    if (!activeMembership || activeMembership.expiresAt <= new Date()) {
+      throw new AppError("No active membership found for this customer", 400);
+    }
+    if (activeMembership.remainingMinutes < durationMinutes) {
+      throw new AppError("Membership does not have enough remaining time", 400);
+    }
+
+    membershipId = activeMembership.id;
+    discount = basePrice;
+    appliedOfferCode = activeMembership.planName ?? activeMembership.planType;
+  } else {
+    if (pricingType === "FIRST_TIME_FREE") {
+      if (!normalizedPhone || !customer) {
+        throw new AppError(
+          "Phone number is required for first-time free play",
+          400,
+        );
+      }
+      if (customer.hasClaimedFirstFree) {
+        throw new AppError(
+          "This customer has already used the first-time free play",
+          400,
+        );
+      }
+      discount +=
+        (effectiveHourlyRate / 60) *
+        Math.min(FIRST_FREE_MINUTES, durationMinutes);
+    }
+
+    const offerDiscount = await applyOfferDiscount(
+      offerCode,
+      Math.max(0, basePrice - discount),
+      durationMinutes,
+      effectiveHourlyRate,
+    );
+
+    discount += offerDiscount.discount;
+    appliedOfferCode = offerDiscount.appliedOfferCode;
   }
 
   const totalAmount = Math.max(0, basePrice - discount);
@@ -73,23 +226,53 @@ export async function startSession(
       data: {
         deviceId,
         staffId,
-        customerName: customerName?.trim() || null,
+        customerId: customer?.id ?? null,
+        membershipId,
+        customerName: customerName.trim(),
+        customerPhone: normalizedPhone,
         startTime: now,
         endTime,
         durationMinutes,
+        playerCount,
+        pricingType,
+        baseAmount: basePrice,
+        appliedDiscount: Math.min(discount, basePrice),
         totalAmount,
+        appliedOfferCode,
         status: "ACTIVE",
       },
     });
-    await tx.transaction.create({
-      data: {
-        sessionId: session.id,
-        amount: totalAmount,
-        discount,
-        cashPaid: cashPaid ?? totalAmount,
-        paymentMethod,
-      },
-    });
+
+    if (pricingType === "MEMBERSHIP" && membershipId) {
+      await tx.membership.update({
+        where: { id: membershipId },
+        data: {
+          remainingMinutes: {
+            decrement: durationMinutes,
+          },
+        },
+      });
+    }
+
+    if (pricingType === "FIRST_TIME_FREE") {
+      await tx.customer.update({
+        where: { id: customer!.id },
+        data: { hasClaimedFirstFree: true },
+      });
+    }
+
+    if (totalAmount > 0) {
+      await tx.transaction.create({
+        data: {
+          sessionId: session.id,
+          amount: totalAmount,
+          discount: Math.min(discount, basePrice),
+          cashPaid: cashPaid ?? totalAmount,
+          paymentMethod,
+        },
+      });
+    }
+
     await tx.device.update({
       where: { id: deviceId },
       data: { status: "RUNNING" },
@@ -102,21 +285,19 @@ export async function startSession(
     include: {
       device: true,
       staff: { select: { id: true, name: true, role: true } },
+      customer: { select: { id: true, name: true, phone: true } },
+      membership: true,
       transaction: true,
     },
   });
 
   return full
     ? {
-        ...full,
-        totalAmount: Number(full.totalAmount),
-        device: { ...full.device, hourlyRate: Number(full.device.hourlyRate) },
-        transaction: full.transaction
+        ...serializeSessionRecord(full),
+        membership: full.membership
           ? {
-              ...full.transaction,
-              amount: Number(full.transaction.amount),
-              discount: Number(full.transaction.discount),
-              cashPaid: Number(full.transaction.cashPaid),
+              ...full.membership,
+              price: Number(full.membership.price),
             }
           : null,
       }
@@ -129,13 +310,17 @@ export async function getActiveSessions() {
     include: {
       device: true,
       staff: { select: { id: true, name: true } },
+      customer: { select: { id: true, name: true, phone: true } },
+      membership: true,
+      transaction: true,
     },
     orderBy: { startTime: "asc" },
   });
-  return sessions.map((s) => ({
-    ...s,
-    totalAmount: Number(s.totalAmount),
-    device: { ...s.device, hourlyRate: Number(s.device.hourlyRate) },
+  return sessions.map((session) => ({
+    ...serializeSessionRecord(session),
+    membership: session.membership
+      ? { ...session.membership, price: Number(session.membership.price) }
+      : null,
   }));
 }
 
@@ -145,24 +330,16 @@ export async function getSessionById(id: string) {
     include: {
       device: true,
       staff: { select: { id: true, name: true, role: true } },
+      customer: { select: { id: true, name: true, phone: true } },
+      membership: true,
       transaction: true,
     },
   });
   if (!session) throw new AppError("Session not found", 404);
   return {
-    ...session,
-    totalAmount: Number(session.totalAmount),
-    device: {
-      ...session.device,
-      hourlyRate: Number(session.device.hourlyRate),
-    },
-    transaction: session.transaction
-      ? {
-          ...session.transaction,
-          amount: Number(session.transaction.amount),
-          discount: Number(session.transaction.discount),
-          cashPaid: Number(session.transaction.cashPaid),
-        }
+    ...serializeSessionRecord(session),
+    membership: session.membership
+      ? { ...session.membership, price: Number(session.membership.price) }
       : null,
   };
 }
@@ -198,6 +375,8 @@ export async function getSessions(filters: {
       include: {
         device: true,
         staff: { select: { id: true, name: true } },
+        customer: { select: { id: true, name: true, phone: true } },
+        membership: true,
         transaction: true,
       },
       orderBy: { startTime: "desc" },
@@ -208,17 +387,10 @@ export async function getSessions(filters: {
   ]);
 
   return {
-    sessions: sessions.map((s) => ({
-      ...s,
-      totalAmount: Number(s.totalAmount),
-      device: { ...s.device, hourlyRate: Number(s.device.hourlyRate) },
-      transaction: s.transaction
-        ? {
-            ...s.transaction,
-            amount: Number(s.transaction.amount),
-            discount: Number(s.transaction.discount),
-            cashPaid: Number(s.transaction.cashPaid),
-          }
+    sessions: sessions.map((session) => ({
+      ...serializeSessionRecord(session),
+      membership: session.membership
+        ? { ...session.membership, price: Number(session.membership.price) }
         : null,
     })),
     total,
@@ -243,12 +415,32 @@ export async function autoEndExpiredSessions(): Promise<
 
   if (expired.length === 0) return [];
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const s of expired) {
       await tx.session.update({
         where: { id: s.id },
         data: { status: "COMPLETED" },
       });
+
+      const membershipSession = await tx.session.findUnique({
+        where: { id: s.id },
+        select: { membershipId: true },
+      });
+
+      if (membershipSession?.membershipId) {
+        const membership = await tx.membership.findUnique({
+          where: { id: membershipSession.membershipId },
+          select: { remainingMinutes: true },
+        });
+
+        if (membership && membership.remainingMinutes <= 0) {
+          await tx.membership.update({
+            where: { id: membershipSession.membershipId },
+            data: { isActive: false },
+          });
+        }
+      }
+
       await tx.device.update({
         where: { id: s.deviceId },
         data: { status: "AVAILABLE" },

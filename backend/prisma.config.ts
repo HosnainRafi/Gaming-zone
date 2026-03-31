@@ -10,6 +10,9 @@ export default defineConfig({
   },
   datasource: {
     url: process.env["DATABASE_URL"],
-    directUrl: process.env["DIRECT_URL"],
-  },
+    // directUrl bypasses PgBouncer for migrations (Prisma 7 runtime supports it)
+    ...(process.env["DIRECT_URL"]
+      ? { directUrl: process.env["DIRECT_URL"] }
+      : {}),
+  } as { url?: string; shadowDatabaseUrl?: string },
 });

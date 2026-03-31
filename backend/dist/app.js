@@ -23,8 +23,15 @@ function createApp() {
     }));
     app.use(express_1.default.json({ limit: "1mb" }));
     app.use((0, morgan_1.default)(env_1.env.NODE_ENV === "production" ? "combined" : "dev"));
+    app.get("/", (_req, res) => {
+        res.json({ status: "Gaming Zone API is running" });
+    });
     app.use("/api", routes_1.apiRouter);
+    app.use((_req, res) => {
+        res.status(404).json({ error: "Not found" });
+    });
     app.use(errorHandler_1.errorHandler);
     return app;
 }
+exports.default = createApp();
 //# sourceMappingURL=app.js.map

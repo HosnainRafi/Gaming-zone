@@ -30,22 +30,19 @@ export function Modal({ open, onClose, title, children, size = "md" }: Props) {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 overflow-y-auto p-4" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       {/* Panel */}
       <div
         className={clsx(
-          "relative w-full rounded-2xl border border-[#1e1e30] bg-[#13131f] shadow-2xl shadow-black/50",
+          "relative mx-auto my-4 flex w-full max-h-[calc(100vh-2rem)] flex-col rounded-2xl border border-gz-border bg-gz-card shadow-2xl shadow-black/50",
           widths[size],
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#1e1e30] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-gz-border px-6 py-4">
           <h2 className="font-display text-lg font-semibold text-white">
             {title}
           </h2>
@@ -56,7 +53,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: Props) {
             <X size={18} />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>
   );

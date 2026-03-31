@@ -42,9 +42,24 @@ export async function updateDevice(
 }
 
 export async function deleteDevice(id: string) {
-  const device = await getDeviceById(id);
-  if (device.status === "RUNNING") {
-    throw new AppError("Cannot delete a device that is currently running", 400);
-  }
-  return prisma.device.delete({ where: { id } });
+  await getDeviceById(id);
+
+  return prisma.$transaction(async (tx) => {
+    const sessions = await tx.session.findMany({
+      where: { deviceId: id },
+      select: { id: true },
+    });
+
+    if (sessions.length > 0) {
+      await tx.transaction.deleteMany({
+        where: {
+          sessionId: { in: sessions.map((session) => session.id) },
+        },
+      });
+
+      await tx.session.deleteMany({ where: { deviceId: id } });
+    }
+
+    return tx.device.delete({ where: { id } });
+  });
 }

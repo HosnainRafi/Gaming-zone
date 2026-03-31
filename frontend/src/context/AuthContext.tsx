@@ -14,6 +14,7 @@ interface AuthContextValue {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -33,34 +34,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [loading, setLoading] = useState(false);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      const data = await authApi.login(email, password);
-      localStorage.setItem("gz_token", data.token);
-      localStorage.setItem("gz_user", JSON.stringify(data.user));
-      setToken(data.token);
-      setUser(data.user);
-    } finally {
-      setLoading(false);
+  const persistUser = useCallback((nextUser: AuthUser | null) => {
+    if (nextUser) {
+      localStorage.setItem("gz_user", JSON.stringify(nextUser));
+    } else {
+      localStorage.removeItem("gz_user");
     }
+    setUser(nextUser);
   }, []);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setLoading(true);
+      try {
+        const data = await authApi.login(email, password);
+        localStorage.setItem("gz_token", data.token);
+        setToken(data.token);
+        persistUser(data.user);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [persistUser],
+  );
 
   const logout = useCallback(() => {
     localStorage.removeItem("gz_token");
-    localStorage.removeItem("gz_user");
     setToken(null);
-    setUser(null);
-  }, []);
+    persistUser(null);
+  }, [persistUser]);
+
+  const refreshUser = useCallback(async () => {
+    if (!token) return;
+    const currentUser = await authApi.me();
+    persistUser(currentUser);
+  }, [persistUser, token]);
 
   // Keep user data fresh on page load if token exists
   useEffect(() => {
     if (!token) return;
-    authApi.me().catch(() => logout());
-  }, [token, logout]);
+    refreshUser().catch(() => logout());
+  }, [token, refreshUser, logout]);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, refreshUser, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -3,20 +3,38 @@ import type { Device } from "./devices";
 
 export type PaymentMethod = "CASH" | "CARD" | "MOBILE_WALLET" | "OTHER";
 export type SessionStatus = "ACTIVE" | "COMPLETED" | "CANCELED";
+export type SessionPricingType = "STANDARD" | "MEMBERSHIP" | "FIRST_TIME_FREE";
 
 export interface Session {
   id: string;
   deviceId: string;
   staffId: string;
+  customerId: string | null;
+  membershipId: string | null;
   customerName: string | null;
+  customerPhone: string | null;
   startTime: string;
   endTime: string;
   durationMinutes: number;
+  playerCount: number;
+  pricingType: SessionPricingType;
+  baseAmount: number;
+  appliedDiscount: number;
   totalAmount: number;
+  appliedOfferCode: string | null;
   status: SessionStatus;
   createdAt: string;
   device: Device;
   staff: { id: string; name: string | null };
+  customer?: { id: string; name: string; phone: string } | null;
+  membership?: {
+    id: string;
+    planName?: string | null;
+    planType?: string | null;
+    price: number;
+    remainingMinutes: number;
+    expiresAt: string;
+  } | null;
   transaction: {
     id: string;
     receiptNumber: number;
@@ -31,9 +49,12 @@ export interface Session {
 export interface StartSessionPayload {
   deviceId: string;
   durationMinutes: number;
+  pricingType: SessionPricingType;
   paymentMethod: PaymentMethod;
   offerCode?: string;
-  customerName?: string;
+  customerName: string;
+  customerPhone?: string;
+  playerCount: number;
   cashPaid?: number;
 }
 

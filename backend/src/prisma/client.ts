@@ -10,10 +10,7 @@ export function getPrisma(): PrismaClient {
     const adapter = new PrismaPg({ connectionString });
     _prisma = new PrismaClient({
       adapter,
-      log:
-        process.env.NODE_ENV === "development"
-          ? ["query", "info", "warn", "error"]
-          : ["warn", "error"],
+      log: ["warn", "error"],
     });
   }
   return _prisma;

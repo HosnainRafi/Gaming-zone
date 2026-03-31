@@ -45,7 +45,9 @@ export default function SessionsPage() {
     data?.sessions.filter((s) =>
       search
         ? s.device.name.toLowerCase().includes(search.toLowerCase()) ||
-          s.staff.name?.toLowerCase().includes(search.toLowerCase())
+          s.staff.name?.toLowerCase().includes(search.toLowerCase()) ||
+          s.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+          s.customerPhone?.includes(search)
         : true,
     ) ?? [];
 
@@ -108,11 +110,14 @@ export default function SessionsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#1e1e30] text-left text-[11px] uppercase tracking-widest text-slate-500">
+                <tr className="border-b border-gz-border text-left text-[11px] uppercase tracking-widest text-slate-500">
                   <th className="pb-3 pr-4">Device</th>
+                  <th className="pb-3 pr-4">Customer</th>
                   <th className="pb-3 pr-4">Staff</th>
                   <th className="pb-3 pr-4">Start Time</th>
                   <th className="pb-3 pr-4">Duration</th>
+                  <th className="pb-3 pr-4">Players</th>
+                  <th className="pb-3 pr-4">Mode</th>
                   <th className="pb-3 pr-4">Amount</th>
                   <th className="pb-3 pr-4">Payment</th>
                   <th className="pb-3">Status</th>
@@ -172,23 +177,44 @@ export default function SessionsPage() {
 }
 
 function SessionRow({ session: s }: { session: Session }) {
-  const pm = s.transaction?.paymentMethod ?? "—";
+  const pm =
+    s.pricingType === "MEMBERSHIP"
+      ? "Membership"
+      : s.pricingType === "FIRST_TIME_FREE" && !s.transaction
+        ? "Free Trial"
+        : (s.transaction?.paymentMethod ?? "—");
+
+  const modeLabel =
+    s.pricingType === "FIRST_TIME_FREE"
+      ? "First free"
+      : s.pricingType === "MEMBERSHIP"
+        ? (s.membership?.planName ?? s.membership?.planType ?? "Membership")
+        : (s.appliedOfferCode ?? "Standard");
+
   return (
-    <tr className="hover:bg-white/[0.02] transition">
+    <tr className="transition hover:bg-white/2">
       <td className="py-3 pr-4">
         <div className="font-medium text-slate-200">{s.device.name}</div>
         <div className="text-[11px] text-slate-500">{s.device.type}</div>
+      </td>
+      <td className="py-3 pr-4">
+        <div className="text-slate-300">{s.customerName ?? "—"}</div>
+        <div className="text-[11px] text-slate-500">
+          {s.customerPhone ?? "—"}
+        </div>
       </td>
       <td className="py-3 pr-4 text-slate-400">{s.staff.name ?? "—"}</td>
       <td className="py-3 pr-4 text-slate-400 text-xs font-mono">
         {format(new Date(s.startTime), "dd MMM yy, HH:mm")}
       </td>
       <td className="py-3 pr-4 text-slate-400">{s.durationMinutes} min</td>
+      <td className="py-3 pr-4 text-slate-400">{s.playerCount}</td>
+      <td className="py-3 pr-4 text-slate-400">{modeLabel}</td>
       <td className="py-3 pr-4 font-medium text-green-400">
         {formatBDT(s.totalAmount)}
       </td>
       <td className="py-3 pr-4">
-        <span className="text-xs rounded-full border border-[#1e1e30] bg-[#0f0f1a] px-2 py-0.5 text-slate-400 capitalize">
+        <span className="text-xs rounded-full border border-gz-border bg-gz-surface px-2 py-0.5 text-slate-400 capitalize">
           {pm.toLowerCase().replace("_", " ")}
         </span>
       </td>

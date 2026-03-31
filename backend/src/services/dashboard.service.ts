@@ -26,11 +26,21 @@ export async function getDashboardStats() {
   const now = new Date();
 
   const revenue = async (from: Date) => {
-    const r = await prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: { createdAt: { gte: from } },
-    });
-    return Number(r._sum.amount ?? 0);
+    const [sessionRevenue, membershipRevenue] = await Promise.all([
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { createdAt: { gte: from } },
+      }),
+      prisma.membershipSale.aggregate({
+        _sum: { amount: true },
+        where: { createdAt: { gte: from } },
+      }),
+    ]);
+
+    return (
+      Number(sessionRevenue._sum.amount ?? 0) +
+      Number(membershipRevenue._sum.amount ?? 0)
+    );
   };
 
   const [today, week, month, year, activeSessions, deviceStats] =
