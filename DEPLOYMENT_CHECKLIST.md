@@ -20,7 +20,7 @@
 
 ## Backend Deployment ✅
 
-1. [ ] Go to https://vercel.com/dashboard  
+1. [ ] Go to https://vercel.com/dashboard
 2. [ ] Click "Add New" → "Project"
 3. [ ] Select the same GitHub repository
 4. [ ] Root Directory: **backend**
@@ -44,6 +44,7 @@
 ## Update Frontend API URL ✅
 
 If using environment variables:
+
 - [ ] Add `VITE_API_URL` environment variable to frontend Vercel project
 - [ ] Update `frontend/src/api/axios.ts` to use `VITE_API_URL`
 - [ ] Rebuild frontend
@@ -51,10 +52,12 @@ If using environment variables:
 ## If Socket.io Doesn't Work ✅
 
 Option 1: Switch backend to Railway.app or Render.com
+
 - [ ] Migrate backend database
 - [ ] Update CORS_ORIGIN in frontend to new backend URL
 
 Option 2: Remove Socket.io and use polling instead
+
 - [ ] Refactor WebSocket code to use polling
 - [ ] Test functionality
 

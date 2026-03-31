@@ -1,11 +1,14 @@
 # Vercel Deployment Guide
 
 ## Overview
+
 This project is configured for deployment on Vercel with:
+
 - **Frontend**: React + Vite app (Static hosting)
 - **Backend**: Express.js API (Serverless Functions)
 
 ## Prerequisites
+
 1. **Vercel Account**: Sign up at https://vercel.com (free tier works)
 2. **GitHub Account**: Your project must be pushed to GitHub
 3. **PostgreSQL Database**: Set up a production database (e.g., using Vercel Postgres, Supabase, or Railway)
@@ -16,16 +19,19 @@ This project is configured for deployment on Vercel with:
 Choose one of these options:
 
 ### Option A: Vercel Postgres (Recommended)
+
 1. Go to https://vercel.com/docs/storage/vercel-postgres/quickstart
 2. Create a new Postgres database in your Vercel dashboard
 3. Copy the connection string (DATABASE_URL)
 
 ### Option B: Supabase
+
 1. Create a free account at https://supabase.com
 2. Create a new project
 3. Get the connection string from Project Settings > Database > Connection Pooling
 
 ### Option C: Railway.app
+
 1. Create an account at https://railway.app
 2. Create a new PostgreSQL database
 3. Copy the database URL
@@ -33,6 +39,7 @@ Choose one of these options:
 ## Step 2: Deploy Frontend to Vercel
 
 ### Method 1: Using Vercel Dashboard
+
 1. Go to https://vercel.com/dashboard
 2. Click "Add New" → "Project"
 3. Import your GitHub repository
@@ -40,6 +47,7 @@ Choose one of these options:
 5. Click "Deploy"
 
 ### Method 2: Using Vercel CLI
+
 ```bash
 cd frontend
 vercel
@@ -49,6 +57,7 @@ vercel
 ## Step 3: Deploy Backend to Vercel
 
 ### Method 1: Using Vercel Dashboard
+
 1. Go to https://vercel.com/dashboard
 2. Click "Add New" → "Project"
 3. Import your GitHub repository (same one)
@@ -61,6 +70,7 @@ vercel
 6. Click "Deploy"
 
 ### Method 2: Using Vercel CLI
+
 ```bash
 cd backend
 vercel --prod
@@ -71,6 +81,7 @@ vercel --prod
 ## Step 4: Configure Environment Variables
 
 ### Backend Environment Variables
+
 In Vercel Backend Project Settings → Environment Variables, add:
 
 ```
@@ -81,6 +92,7 @@ NODE_ENV=production
 ```
 
 ### Frontend Environment Variables (if needed)
+
 In Vercel Frontend Project Settings → Environment Variables, add:
 
 ```
@@ -88,8 +100,9 @@ VITE_API_URL=https://your-backend.vercel.app
 ```
 
 Then update your frontend API calls to use:
+
 ```typescript
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 ```
 
 ## Step 5: Update API URL in Frontend
@@ -97,10 +110,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 Update the frontend's fetch/axios calls to use the backend URL:
 
 **frontend/src/api/axios.ts** (or similar):
-```typescript
-import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+```typescript
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -119,21 +133,25 @@ export default axiosInstance;
 ## Troubleshooting
 
 ### 1. CORS Errors
+
 - Ensure `CORS_ORIGIN` includes your frontend URL
 - Check browser console for exact error message
 - Update CORS_ORIGIN to include multiple origins: `https://frontend.vercel.app,https://www.frontend.vercel.app`
 
 ### 2. Database Connection Issues
+
 - Verify DATABASE_URL is correct and accessible from Vercel's region
 - Check that database IP whitelist allows Vercel's IPs
 - Check Vercel build logs for detailed error messages
 
 ### 3. Socket.io Connection Issues
+
 - Socket.io required some additional configuration for Vercel Serverless
 - For production, consider hosting backend on Railway.app or Render.com instead
 - These platforms better support WebSocket connections
 
 ### 4. Build Failures
+
 - Check Vercel build logs
 - Ensure all environment variables are set
 - Make sure TypeScript compiles: `npm run build` locally
@@ -141,12 +159,15 @@ export default axiosInstance;
 ## Important Notes
 
 ### Socket.io and Vercel
+
 Vercel Serverless Functions have limitations with persistent WebSocket connections. Options:
+
 1. **Keep Socket.io**: Switch backend hosting to Railway.app, Render.com, or similar
 2. **Remove Socket.io**: Use polling or server-sent events instead
 3. **Hybrid**: Frontend on Vercel, Backend on Railway/Render
 
 To switch backend provider:
+
 ```bash
 # Railway.app example
 npm install -g @railway/cli
@@ -154,7 +175,9 @@ railway up
 ```
 
 ### Database Migrations
+
 Run migrations before deployment:
+
 ```bash
 # Locally
 npm run prisma:migrate
@@ -166,10 +189,12 @@ npx prisma migrate deploy
 ## Redeployment
 
 ### Automatic (Recommended)
+
 - Just push to GitHub main branch
 - Vercel will automatically rebuild and deploy
 
 ### Manual
+
 ```bash
 cd frontend
 vercel --prod
