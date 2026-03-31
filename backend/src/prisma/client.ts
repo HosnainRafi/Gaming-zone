@@ -19,6 +19,6 @@ function createPrismaClient() {
 export const prisma = new Proxy({} as PrismaClient, {
   get(_target, prop) {
     if (!_prisma) _prisma = createPrismaClient();
-    return (_prisma as Record<string | symbol, unknown>)[prop];
+    return (_prisma as unknown as Record<string | symbol, unknown>)[prop];
   },
 });
