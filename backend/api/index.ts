@@ -37,6 +37,16 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api", apiRouter);
 
+// Root route
+app.get("/", (_req, res) => {
+  res.json({ status: "Gaming Zone API is running" });
+});
+
+// 404 handler for unknown routes
+app.use((_req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
 app.use(errorHandler);
 
 export default app;
