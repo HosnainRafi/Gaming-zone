@@ -31,7 +31,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_API_URL || "/";
-    const socket = io(socketUrl, { withCredentials: true, transports: ["polling"] });
+    const socket = io(socketUrl, {
+      withCredentials: true,
+      transports: ["polling"],
+    });
     socketRef.current = socket;
 
     socket.on("connect", () => setConnected(true));

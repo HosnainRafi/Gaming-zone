@@ -15,16 +15,12 @@ app.disable("x-powered-by");
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(",")
-      : true,
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : true,
     credentials: true,
   }),
 );
 app.use(express.json({ limit: "1mb" }));
-app.use(
-  morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"),
-);
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // Health check (no DB needed)
 app.get("/api/health", (_req, res) => {

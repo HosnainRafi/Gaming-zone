@@ -10,9 +10,9 @@ const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
-const routes_1 = require("./routes");
-const errorHandler_1 = require("./middlewares/errorHandler");
 const env_1 = require("./config/env");
+const errorHandler_1 = require("./middlewares/errorHandler");
+const routes_1 = require("./routes");
 function createApp() {
     const app = (0, express_1.default)();
     app.disable("x-powered-by");
