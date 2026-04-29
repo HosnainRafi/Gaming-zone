@@ -2,13 +2,18 @@ import type { DeviceStatus } from "@prisma/client";
 
 import { prisma } from "../prisma/client";
 import { AppError } from "../utils/AppError";
+import { reconcileExpiredSessions } from "./session.service";
 
 export async function getAllDevices() {
+  await reconcileExpiredSessions();
+
   const devices = await prisma.device.findMany({ orderBy: { name: "asc" } });
   return devices.map((d) => ({ ...d, hourlyRate: Number(d.hourlyRate) }));
 }
 
 export async function getDeviceById(id: string) {
+  await reconcileExpiredSessions();
+
   const device = await prisma.device.findUnique({ where: { id } });
   if (!device) throw new AppError("Device not found", 404);
   return { ...device, hourlyRate: Number(device.hourlyRate) };

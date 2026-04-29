@@ -1,4 +1,5 @@
 import { prisma } from "../prisma/client";
+import { reconcileExpiredSessions } from "./session.service";
 
 export async function getSalesReport(from: Date, to: Date) {
   const [transactions, membershipSales] = await Promise.all([
@@ -70,6 +71,8 @@ export async function getSessionsReport(filters: {
   to?: Date;
   status?: string;
 }) {
+  await reconcileExpiredSessions();
+
   const where: Record<string, unknown> = {};
   if (filters.status) where["status"] = filters.status;
   if (filters.from ?? filters.to) {
@@ -151,6 +154,8 @@ export async function getStaffReport(from: Date, to: Date) {
 }
 
 export async function getDeviceUsageReport(from: Date, to: Date) {
+  await reconcileExpiredSessions();
+
   const sessions = await prisma.session.findMany({
     where: { startTime: { gte: from, lte: to }, status: "COMPLETED" },
     include: { device: { select: { id: true, name: true, type: true } } },

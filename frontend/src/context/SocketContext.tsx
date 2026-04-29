@@ -15,8 +15,11 @@ interface TimerUpdate {
   endTime: string;
 }
 
+type ConnectionMode = "connecting" | "realtime" | "polling";
+
 interface SocketContextValue {
   connected: boolean;
+  connectionMode: ConnectionMode;
   timers: Record<string, TimerUpdate>; // keyed by deviceId
   on: (event: string, cb: (data: unknown) => void) => void;
   off: (event: string, cb: (data: unknown) => void) => void;
@@ -26,7 +29,10 @@ const SocketContext = createContext<SocketContextValue | null>(null);
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
+  const hasEverConnectedRef = useRef(false);
   const [connected, setConnected] = useState(false);
+  const [connectionMode, setConnectionMode] =
+    useState<ConnectionMode>("connecting");
   const [timers, setTimers] = useState<Record<string, TimerUpdate>>({});
 
   useEffect(() => {
@@ -37,8 +43,32 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
     socketRef.current = socket;
 
-    socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => setConnected(false));
+    const fallbackToPolling = () => {
+      if (hasEverConnectedRef.current) return;
+      setConnectionMode("polling");
+      setConnected(false);
+      socket.disconnect();
+    };
+
+    const connectTimeoutId = window.setTimeout(fallbackToPolling, 4000);
+
+    socket.on("connect", () => {
+      hasEverConnectedRef.current = true;
+      setConnected(true);
+      setConnectionMode("realtime");
+      window.clearTimeout(connectTimeoutId);
+    });
+
+    socket.on("disconnect", () => {
+      setConnected(false);
+      if (hasEverConnectedRef.current) {
+        setConnectionMode("connecting");
+      }
+    });
+
+    socket.on("connect_error", () => {
+      fallbackToPolling();
+    });
 
     socket.on("timerUpdate", (updates: TimerUpdate[]) => {
       setTimers((prev) => {
@@ -57,6 +87,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      window.clearTimeout(connectTimeoutId);
       socket.disconnect();
     };
   }, []);
@@ -69,7 +100,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SocketContext.Provider value={{ connected, timers, on, off }}>
+    <SocketContext.Provider
+      value={{ connected, connectionMode, timers, on, off }}
+    >
       {children}
     </SocketContext.Provider>
   );

@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Printer, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   sessionApi,
   type Session,
@@ -23,8 +23,8 @@ export default function SessionsPage() {
   const [loading, setLoading] = useState(true);
   const [receiptSession, setReceiptSession] = useState<Session | null>(null);
 
-  const load = async (p: number) => {
-    setLoading(true);
+  const load = useCallback(async (p: number, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await sessionApi.list({
         page: p,
@@ -35,13 +35,22 @@ export default function SessionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [status]);
 
   useEffect(() => {
     setPage(1);
     void load(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, [load, status]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void load(page, true);
+    }, 15_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [load, page]);
 
   const filtered =
     data?.sessions.filter((s) =>

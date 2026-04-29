@@ -5,6 +5,7 @@ import type { UserRole } from "@prisma/client";
 import { env } from "../config/env";
 import { prisma } from "../prisma/client";
 import { AppError } from "../utils/AppError";
+import { reconcileExpiredSessions } from "./session.service";
 
 export async function loginUser(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
@@ -102,6 +103,7 @@ export async function deleteUserByAdmin(id: string, actingUserId: string) {
   }
 
   await getUserById(id);
+  await reconcileExpiredSessions();
 
   const activeSessions = await prisma.session.count({
     where: { staffId: id, status: "ACTIVE" },

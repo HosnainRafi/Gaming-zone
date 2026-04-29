@@ -1,4 +1,5 @@
 import { prisma } from "../prisma/client";
+import { reconcileExpiredSessions } from "./session.service";
 
 function getDateKey(d: Date) {
   const year = d.getFullYear();
@@ -38,6 +39,8 @@ function titleCase(input: string) {
 }
 
 export async function getDashboardStats() {
+  await reconcileExpiredSessions();
+
   const now = new Date();
   const dayStart = startOfDay(now);
   const weekStart = startOfWeek(now);

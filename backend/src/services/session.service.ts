@@ -113,6 +113,54 @@ function serializeSession(session: Record<string, unknown>) {
   };
 }
 
+export async function reconcileExpiredSessions(
+  now = new Date(),
+): Promise<{ sessionId: string; deviceId: string }[]> {
+  const expired = await prisma.session.findMany({
+    where: { status: "ACTIVE", endTime: { lte: now } },
+    select: { id: true, deviceId: true, membershipId: true },
+  });
+
+  if (expired.length === 0) return [];
+
+  const sessionIds = expired.map((session) => session.id);
+  const deviceIds = Array.from(new Set(expired.map((session) => session.deviceId)));
+  const membershipIds = Array.from(
+    new Set(
+      expired
+        .map((session) => session.membershipId)
+        .filter((membershipId): membershipId is string => Boolean(membershipId)),
+    ),
+  );
+
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.session.updateMany({
+      where: { id: { in: sessionIds }, status: "ACTIVE" },
+      data: { status: "COMPLETED" },
+    });
+
+    await tx.device.updateMany({
+      where: { id: { in: deviceIds } },
+      data: { status: "AVAILABLE" },
+    });
+
+    if (membershipIds.length > 0) {
+      await tx.membership.updateMany({
+        where: {
+          id: { in: membershipIds },
+          remainingMinutes: { lte: 0 },
+        },
+        data: { isActive: false },
+      });
+    }
+  });
+
+  return expired.map((session) => ({
+    sessionId: session.id,
+    deviceId: session.deviceId,
+  }));
+}
+
 export async function startSession(
   deviceId: string,
   staffId: string,
@@ -131,6 +179,8 @@ export async function startSession(
       400,
     );
   }
+
+  await reconcileExpiredSessions();
 
   const device = await prisma.device.findUnique({ where: { id: deviceId } });
   if (!device) throw new AppError("Device not found", 404);
@@ -305,6 +355,8 @@ export async function startSession(
 }
 
 export async function getActiveSessions() {
+  await reconcileExpiredSessions();
+
   const sessions = await prisma.session.findMany({
     where: { status: "ACTIVE" },
     include: {
@@ -325,6 +377,8 @@ export async function getActiveSessions() {
 }
 
 export async function getSessionById(id: string) {
+  await reconcileExpiredSessions();
+
   const session = await prisma.session.findUnique({
     where: { id },
     include: {
@@ -353,6 +407,8 @@ export async function getSessions(filters: {
   page?: number;
   limit?: number;
 }) {
+  await reconcileExpiredSessions();
+
   const { status, deviceId, staffId, from, to } = filters;
   const page = filters.page ?? 1;
   const limit = Math.min(filters.limit ?? 20, 100);
@@ -407,48 +463,7 @@ export async function getSessions(filters: {
 export async function autoEndExpiredSessions(): Promise<
   { sessionId: string; deviceId: string }[]
 > {
-  const now = new Date();
-  const expired = await prisma.session.findMany({
-    where: { status: "ACTIVE", endTime: { lte: now } },
-    select: { id: true, deviceId: true },
-  });
-
-  if (expired.length === 0) return [];
-
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    for (const s of expired) {
-      await tx.session.update({
-        where: { id: s.id },
-        data: { status: "COMPLETED" },
-      });
-
-      const membershipSession = await tx.session.findUnique({
-        where: { id: s.id },
-        select: { membershipId: true },
-      });
-
-      if (membershipSession?.membershipId) {
-        const membership = await tx.membership.findUnique({
-          where: { id: membershipSession.membershipId },
-          select: { remainingMinutes: true },
-        });
-
-        if (membership && membership.remainingMinutes <= 0) {
-          await tx.membership.update({
-            where: { id: membershipSession.membershipId },
-            data: { isActive: false },
-          });
-        }
-      }
-
-      await tx.device.update({
-        where: { id: s.deviceId },
-        data: { status: "AVAILABLE" },
-      });
-    }
-  });
-
-  return expired.map((s) => ({ sessionId: s.id, deviceId: s.deviceId }));
+  return reconcileExpiredSessions();
 }
 
 /**

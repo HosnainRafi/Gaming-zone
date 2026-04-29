@@ -33,13 +33,14 @@ import { Card } from "../components/ui/Card";
 import { PageSpinner } from "../components/ui/Spinner";
 import { StatCard } from "../components/ui/StatCard";
 import { useSocket } from "../context/SocketContext";
-import { formatBDT, formatMs } from "../utils/format";
+import { formatBDT, formatMs, remainingMsFromEndTime } from "../utils/format";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const { timers, on, off } = useSocket();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const { connectionMode, timers, on, off } = useSocket();
 
   const load = async () => {
     try {
@@ -67,6 +68,30 @@ export default function DashboardPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (activeSessions.length === 0) return;
+
+    const intervalId = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [activeSessions.length]);
+
+  useEffect(() => {
+    if (connectionMode === "realtime") return;
+
+    const intervalId = window.setInterval(() => {
+      void load();
+    }, 15_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [connectionMode]);
 
   if (loading) return <PageSpinner />;
 
@@ -518,7 +543,9 @@ export default function DashboardPage() {
               </thead>
               <tbody className="divide-y divide-[#1a1a28]">
                 {activeSessions.map((s) => {
-                  const timer = timers[s.deviceId];
+                  const timer = timers[s.deviceId] ?? {
+                    remainingMs: remainingMsFromEndTime(s.endTime, nowMs),
+                  };
                   return (
                     <tr key={s.id} className="hover:bg-white/[0.02] transition">
                       <td className="py-3 pr-4 font-medium text-slate-200">
@@ -537,13 +564,9 @@ export default function DashboardPage() {
                         {formatBDT(s.totalAmount)}
                       </td>
                       <td className="py-3">
-                        {timer ? (
-                          <span className="font-mono font-medium text-violet-400">
-                            {formatMs(timer.remainingMs)}
-                          </span>
-                        ) : (
-                          <Badge status="ACTIVE" label="active" />
-                        )}
+                        <span className="font-mono font-medium text-violet-400">
+                          {formatMs(timer.remainingMs)}
+                        </span>
                       </td>
                     </tr>
                   );

@@ -44,7 +44,7 @@ export function Sidebar({
   onNavigateMobile,
 }: SidebarProps) {
   const { user, logout } = useAuth();
-  const { connected } = useSocket();
+  const { connectionMode } = useSocket();
   const collapsed = !mobileExpanded;
   const labelClass = collapsed ? "hidden md:block" : "block";
   const justifyClass = collapsed
@@ -157,13 +157,19 @@ export function Sidebar({
             collapsed && "justify-center md:justify-start",
           )}
         >
-          {connected ? (
+          {connectionMode === "realtime" ? (
             <Wifi size={13} className="text-green-400" />
+          ) : connectionMode === "polling" ? (
+            <WifiOff size={13} className="text-amber-400" />
           ) : (
             <WifiOff size={13} className="text-red-400 animate-pulse" />
           )}
           <span className={clsx("text-[11px] text-slate-500", labelClass)}>
-            {connected ? "Real-time connected" : "Reconnecting…"}
+            {connectionMode === "realtime"
+              ? "Real-time connected"
+              : connectionMode === "polling"
+                ? "Polling mode"
+                : "Reconnecting…"}
           </span>
         </div>
 

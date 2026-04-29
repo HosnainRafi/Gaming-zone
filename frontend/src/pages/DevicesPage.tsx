@@ -30,7 +30,12 @@ import { Select } from "../components/ui/Select";
 import { PageSpinner } from "../components/ui/Spinner";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
-import { calcPrice, formatBDT, formatMs } from "../utils/format";
+import {
+  calcPrice,
+  formatBDT,
+  formatMs,
+  remainingMsFromEndTime,
+} from "../utils/format";
 
 const TIME_SLOTS = [
   { value: 30, label: "30 minutes" },
@@ -82,11 +87,12 @@ function getExtraPlayerHourlyRate(type: string) {
 
 export default function DevicesPage() {
   const { user } = useAuth();
-  const { timers, on, off } = useSocket();
+  const { connectionMode, timers, on, off } = useSocket();
   const [devices, setDevices] = useState<Device[]>([]);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   // Start Session modal state
   const [startDevice, setStartDevice] = useState<Device | null>(null);
@@ -148,6 +154,30 @@ export default function DevicesPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadDevices]);
+
+  useEffect(() => {
+    if (activeSessions.length === 0) return;
+
+    const intervalId = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [activeSessions.length]);
+
+  useEffect(() => {
+    if (connectionMode === "realtime") return;
+
+    const intervalId = window.setInterval(() => {
+      void loadDevices(true);
+    }, 15_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [connectionMode, loadDevices]);
 
   // --- Price calculation ---
   const effectiveMinutes =
@@ -427,21 +457,33 @@ export default function DevicesPage() {
             Running ({running.length})
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {running.map((d) => (
-              <DeviceCard
-                key={d.id}
-                device={d}
-                timer={timers[d.id]}
-                activeSession={activeSessions.find(
-                  (session) => session.deviceId === d.id,
-                )}
-                onPrint={(session) => setReceiptSession(session)}
-                onEdit={user?.role === "ADMIN" ? openEditDevice : undefined}
-                onDelete={
-                  user?.role === "ADMIN" ? handleDeleteDevice : undefined
-                }
-              />
-            ))}
+            {running.map((d) => {
+              const activeSession = activeSessions.find(
+                (session) => session.deviceId === d.id,
+              );
+              const timer = activeSession
+                ? (timers[d.id] ?? {
+                    remainingMs: remainingMsFromEndTime(
+                      activeSession.endTime,
+                      nowMs,
+                    ),
+                  })
+                : undefined;
+
+              return (
+                <DeviceCard
+                  key={d.id}
+                  device={d}
+                  timer={timer}
+                  activeSession={activeSession}
+                  onPrint={(session) => setReceiptSession(session)}
+                  onEdit={user?.role === "ADMIN" ? openEditDevice : undefined}
+                  onDelete={
+                    user?.role === "ADMIN" ? handleDeleteDevice : undefined
+                  }
+                />
+              );
+            })}
           </div>
         </section>
       )}
