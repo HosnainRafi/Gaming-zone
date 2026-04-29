@@ -229,3 +229,58 @@ model Offer {
 
   @@index([isActive, expiry])
 }
+
+// ============ PUBLIC SITE MODELS ============
+
+model Game {
+  id          String   @id @default(cuid())
+  title       String
+  platform    String   // PC, PS4, PS5, Racing Sim, Arcade
+  genre       String
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([platform, isActive])
+  @@index([isActive, sortOrder])
+}
+
+model PricingTier {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  price       Decimal  @db.Decimal(10, 2)
+  perUnit     String   @default("per hour") // "per hour", "each"
+  description String[] // array of feature points
+  isPopular   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model SliderImage {
+  id          String   @id @default(cuid())
+  title       String?
+  subtitle    String?
+  imageUrl    String
+  linkUrl     String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model SiteSettings {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String
+  updatedAt       DateTime @updatedAt
+
+  @@index([key])
+}

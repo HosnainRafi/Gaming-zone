@@ -1,11 +1,12 @@
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Printer, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   sessionApi,
   type Session,
   type SessionsResponse,
 } from "../api/sessions";
+import { PrintReceipt } from "../components/PrintReceipt";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
@@ -20,6 +21,7 @@ export default function SessionsPage() {
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [receiptSession, setReceiptSession] = useState<Session | null>(null);
 
   const load = async (p: number) => {
     setLoading(true);
@@ -56,7 +58,7 @@ export default function SessionsPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-display text-2xl font-bold text-white">
             Sessions
@@ -93,7 +95,12 @@ export default function SessionsPage() {
               ]}
             />
           </div>
-          <Button variant="outline" size="md" onClick={() => void load(page)}>
+          <Button
+            variant="outline"
+            size="md"
+            onClick={() => void load(page)}
+            className="w-full sm:w-auto"
+          >
             <Search size={14} />
             Refresh
           </Button>
@@ -108,7 +115,7 @@ export default function SessionsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-215 w-full text-sm">
               <thead>
                 <tr className="border-b border-gz-border text-left text-[11px] uppercase tracking-widest text-slate-500">
                   <th className="pb-3 pr-4">Device</th>
@@ -120,12 +127,17 @@ export default function SessionsPage() {
                   <th className="pb-3 pr-4">Mode</th>
                   <th className="pb-3 pr-4">Amount</th>
                   <th className="pb-3 pr-4">Payment</th>
+                  <th className="pb-3 pr-4">Receipt</th>
                   <th className="pb-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a1a28]">
                 {filtered.map((s) => (
-                  <SessionRow key={s.id} session={s} />
+                  <SessionRow
+                    key={s.id}
+                    session={s}
+                    onPrint={() => setReceiptSession(s)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -140,15 +152,16 @@ export default function SessionsPage() {
 
       {/* Pagination */}
       {data && data.pages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-slate-500">
             Page {data.page} of {data.pages}
           </p>
-          <div className="flex gap-2">
+          <div className="flex w-full gap-2 sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               disabled={page <= 1}
+              className="flex-1 sm:flex-none"
               onClick={() => {
                 setPage(page - 1);
                 void load(page - 1);
@@ -161,6 +174,7 @@ export default function SessionsPage() {
               variant="outline"
               size="sm"
               disabled={page >= data.pages}
+              className="flex-1 sm:flex-none"
               onClick={() => {
                 setPage(page + 1);
                 void load(page + 1);
@@ -172,11 +186,24 @@ export default function SessionsPage() {
           </div>
         </div>
       )}
+
+      {receiptSession && (
+        <PrintReceipt
+          session={receiptSession}
+          onClose={() => setReceiptSession(null)}
+        />
+      )}
     </div>
   );
 }
 
-function SessionRow({ session: s }: { session: Session }) {
+function SessionRow({
+  session: s,
+  onPrint,
+}: {
+  session: Session;
+  onPrint: () => void;
+}) {
   const pm =
     s.pricingType === "MEMBERSHIP"
       ? "Membership"
@@ -217,6 +244,16 @@ function SessionRow({ session: s }: { session: Session }) {
         <span className="text-xs rounded-full border border-gz-border bg-gz-surface px-2 py-0.5 text-slate-400 capitalize">
           {pm.toLowerCase().replace("_", " ")}
         </span>
+      </td>
+      <td className="py-3 pr-4">
+        <button
+          type="button"
+          onClick={onPrint}
+          className="inline-flex items-center gap-2 rounded-lg border border-gz-border bg-gz-surface px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-violet-500/40 hover:text-white"
+        >
+          <Printer size={14} />
+          Print
+        </button>
       </td>
       <td className="py-3">
         <Badge status={s.status} />

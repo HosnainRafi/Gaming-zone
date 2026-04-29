@@ -50,7 +50,7 @@ export function StatCard({
   return (
     <div
       className={clsx(
-        "rounded-xl border border-[#1e1e30] bg-[#13131f] p-5 flex items-center gap-4",
+        "flex flex-col items-start gap-3 rounded-xl border border-[#1e1e30] bg-[#13131f] p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5",
         glow && `shadow-lg ${c.ring}`,
       )}
     >
@@ -66,7 +66,12 @@ export function StatCard({
         <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
           {label}
         </p>
-        <p className={clsx("mt-0.5 text-2xl font-bold font-display", c.text)}>
+        <p
+          className={clsx(
+            "mt-0.5 text-xl font-bold font-display sm:text-2xl",
+            c.text,
+          )}
+        >
           {value}
         </p>
         {sub && <p className="text-xs text-slate-600 mt-0.5">{sub}</p>}

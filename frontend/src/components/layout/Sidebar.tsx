@@ -7,17 +7,19 @@ import {
   LogOut,
   Menu,
   MonitorPlay,
+  Settings,
   Tag,
   Users,
   Wifi,
   WifiOff,
+  X,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/devices", icon: MonitorPlay, label: "Devices" },
   { to: "/members", icon: CreditCard, label: "Members" },
   { to: "/sessions", icon: Gamepad2, label: "Sessions" },
@@ -25,7 +27,10 @@ const navItems = [
   { to: "/reports", icon: BarChart3, label: "Reports" },
 ];
 
-const adminItems = [{ to: "/staff", icon: Users, label: "Staff" }];
+const adminItems = [
+  { to: "/staff", icon: Users, label: "Staff" },
+  { to: "/settings", icon: Settings, label: "Site Settings" },
+];
 
 interface SidebarProps {
   mobileExpanded: boolean;
@@ -49,11 +54,11 @@ export function Sidebar({
   return (
     <aside
       className={clsx(
-        "flex h-full shrink-0 flex-col border-r border-gz-border bg-gz-surface transition-all duration-200",
+        "fixed inset-y-0 left-0 z-40 flex h-full w-72 shrink-0 flex-col border-r border-gz-border bg-gz-surface transition-transform duration-200 md:static md:z-auto md:w-60 md:translate-x-0 md:shadow-none",
         mobileExpanded
-          ? "fixed inset-y-0 left-0 z-40 w-64 shadow-2xl shadow-black/40"
-          : "w-16",
-        "md:static md:z-auto md:w-60 md:shadow-none",
+          ? "translate-x-0 shadow-2xl shadow-black/40"
+          : "-translate-x-full pointer-events-none",
+        "md:pointer-events-auto",
       )}
     >
       <div className="flex items-center justify-between border-b border-gz-border px-4 py-5 md:px-5">
@@ -76,7 +81,7 @@ export function Sidebar({
           className="rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white md:hidden"
           title={mobileExpanded ? "Collapse sidebar" : "Expand sidebar"}
         >
-          <Menu size={18} />
+          {mobileExpanded ? <X size={18} /> : <Menu size={18} />}
         </button>
       </div>
 
@@ -93,7 +98,7 @@ export function Sidebar({
           <NavLink
             key={to}
             to={to}
-            end={to === "/"}
+            end={to === "/dashboard"}
             title={label}
             onClick={onNavigateMobile}
             className={({ isActive }) =>

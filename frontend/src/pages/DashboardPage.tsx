@@ -1,15 +1,25 @@
 import {
   Activity,
+  Clock3,
+  CreditCard,
   DollarSign,
   MonitorPlay,
   TrendingUp,
+  UserPlus,
+  Users,
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  Area,
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  ComposedChart,
+  Line,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -76,13 +86,6 @@ export default function DashboardPage() {
       </div>
     );
 
-  const revenueChartData = [
-    { period: "Today", amount: stats.revenue.today },
-    { period: "This Week", amount: stats.revenue.week },
-    { period: "This Month", amount: stats.revenue.month },
-    { period: "This Year", amount: stats.revenue.year },
-  ];
-
   const deviceChartData = [
     { name: "Available", value: stats.devices.available, fill: "#22c55e" },
     { name: "Running", value: stats.devices.running, fill: "#7c3aed" },
@@ -90,9 +93,13 @@ export default function DashboardPage() {
     { name: "Disabled", value: stats.devices.disabled, fill: "#52525b" },
   ];
 
+  const paymentColors = ["#7c3aed", "#06b6d4", "#22c55e", "#f59e0b", "#f97316"];
+  const paymentChartData = stats.paymentMethods.filter(
+    (item) => item.amount > 0,
+  );
+
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div>
         <h1 className="font-display text-2xl font-bold text-white">
           Dashboard
@@ -102,14 +109,14 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Revenue stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={<DollarSign size={22} />}
           label="Today Revenue"
           value={formatBDT(stats.revenue.today)}
           color="green"
           glow
+          sub={`Avg sale ${formatBDT(stats.revenue.avgSaleToday)}`}
         />
         <StatCard
           icon={<TrendingUp size={22} />}
@@ -134,59 +141,98 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Device stats */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          icon={<MonitorPlay size={22} />}
-          label="Total Devices"
-          value={stats.devices.total}
-          color="purple"
-        />
-        <StatCard
-          icon={<MonitorPlay size={22} />}
-          label="Available"
-          value={stats.devices.available}
-          color="green"
-        />
-        <StatCard
-          icon={<MonitorPlay size={22} />}
-          label="Running"
-          value={stats.devices.running}
-          color="cyan"
-        />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={<Activity size={22} />}
           label="Active Sessions"
           value={stats.sessions.active}
+          color="green"
+          sub={`${stats.sessions.completedToday} completed today`}
+        />
+        <StatCard
+          icon={<Clock3 size={22} />}
+          label="Hours Sold Today"
+          value={stats.sessions.hoursToday}
+          color="cyan"
+          sub={`Avg duration ${stats.sessions.avgDurationToday} min`}
+        />
+        <StatCard
+          icon={<MonitorPlay size={22} />}
+          label="Device Occupancy"
+          value={`${stats.devices.occupancyPct}%`}
           color="yellow"
+          sub={`${stats.devices.running}/${stats.devices.total} devices running`}
+        />
+        <StatCard
+          icon={<CreditCard size={22} />}
+          label="Checked In Today"
+          value={stats.customers.checkedInToday}
+          color="purple"
+          sub={`${stats.customers.newThisMonth} new customers this month`}
         />
       </div>
 
-      {/* Charts row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          icon={<Users size={22} />}
+          label="Total Customers"
+          value={stats.customers.total}
+          color="purple"
+        />
+        <StatCard
+          icon={<UserPlus size={22} />}
+          label="New Customers"
+          value={stats.customers.newThisMonth}
+          color="cyan"
+          sub="This month"
+        />
+        <StatCard
+          icon={<Zap size={22} />}
+          label="Active Memberships"
+          value={stats.memberships.active}
+          color="green"
+        />
+        <StatCard
+          icon={<TrendingUp size={22} />}
+          label="Memberships Sold"
+          value={stats.memberships.soldThisMonth}
+          color="yellow"
+          sub="This month"
+        />
+      </div>
+
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Revenue chart */}
         <Card className="lg:col-span-2" glow>
           <h3 className="mb-4 font-display text-sm font-semibold text-slate-300 uppercase tracking-wide">
-            Revenue Breakdown
+            Revenue Trend (Last 7 Days)
           </h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={revenueChartData} barSize={36}>
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={stats.trends.last7Days}>
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="#1e1e30"
                 vertical={false}
               />
               <XAxis
-                dataKey="period"
+                dataKey="label"
                 tick={{ fill: "#64748b", fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
+                yAxisId="revenue"
                 tick={{ fill: "#64748b", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => `৳${v}`}
+              />
+              <YAxis
+                yAxisId="sessions"
+                orientation="right"
+                allowDecimals={false}
+                tick={{ fill: "#64748b", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
               />
               <Tooltip
                 cursor={{ fill: "rgba(124,58,237,0.08)" }}
@@ -196,20 +242,111 @@ export default function DashboardPage() {
                   borderRadius: 8,
                   fontSize: 12,
                 }}
-                formatter={(v: number) => [formatBDT(v), "Revenue"]}
+                formatter={(value: number, name: string) => [
+                  name === "Revenue" ? formatBDT(value) : value,
+                  name,
+                ]}
               />
-              <Bar dataKey="amount" fill="#7c3aed" radius={[6, 6, 0, 0]} />
-            </BarChart>
+              <Area
+                yAxisId="revenue"
+                type="monotone"
+                dataKey="revenue"
+                name="Revenue"
+                stroke="#7c3aed"
+                fill="#7c3aed"
+                fillOpacity={0.18}
+                strokeWidth={2}
+              />
+              <Line
+                yAxisId="sessions"
+                type="monotone"
+                dataKey="sessions"
+                name="Sessions"
+                stroke="#06b6d4"
+                strokeWidth={3}
+                dot={{ r: 3 }}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Device status chart */}
+        <Card glow>
+          <h3 className="mb-4 font-display text-sm font-semibold text-slate-300 uppercase tracking-wide">
+            Payments Today
+          </h3>
+          {paymentChartData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={paymentChartData}
+                    dataKey="amount"
+                    nameKey="label"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={3}
+                  >
+                    {paymentChartData.map((entry, index) => (
+                      <Cell
+                        key={entry.label}
+                        fill={paymentColors[index % paymentColors.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: "#13131f",
+                      border: "1px solid #1e1e30",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                    formatter={(value: number) => [formatBDT(value), "Revenue"]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-2">
+                {paymentChartData.map((item, index) => (
+                  <div
+                    key={item.label}
+                    className="flex flex-col items-start justify-between gap-2 rounded-lg border border-[#1e1e30] bg-[#0f0f18] px-3 py-2 text-sm sm:flex-row sm:items-center"
+                  >
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{
+                          backgroundColor:
+                            paymentColors[index % paymentColors.length],
+                        }}
+                      />
+                      {item.label}
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <div className="font-medium text-white">
+                        {formatBDT(item.amount)}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {item.count} payments
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex h-[260px] items-center justify-center text-sm text-slate-500">
+              No payment data yet for today.
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card glow>
           <h3 className="mb-4 font-display text-sm font-semibold text-slate-300 uppercase tracking-wide">
             Device Status
           </h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={deviceChartData} barSize={30} layout="vertical">
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={deviceChartData} barSize={28} layout="vertical">
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="#1e1e30"
@@ -220,6 +357,7 @@ export default function DashboardPage() {
                 tick={{ fill: "#64748b", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
+                allowDecimals={false}
               />
               <YAxis
                 type="category"
@@ -227,7 +365,7 @@ export default function DashboardPage() {
                 tick={{ fill: "#94a3b8", fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
-                width={80}
+                width={88}
               />
               <Tooltip
                 cursor={{ fill: "rgba(255,255,255,0.03)" }}
@@ -240,22 +378,135 @@ export default function DashboardPage() {
               />
               <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                 {deviceChartData.map((entry) => (
-                  <rect key={entry.name} fill={entry.fill} />
+                  <Cell key={entry.name} fill={entry.fill} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </Card>
+
+        <Card glow>
+          <h3 className="mb-4 font-display text-sm font-semibold text-slate-300 uppercase tracking-wide">
+            Staff Leaderboard Today
+          </h3>
+          <div className="space-y-3">
+            {stats.staffLeaderboard.length > 0 ? (
+              stats.staffLeaderboard.map((staff, index) => (
+                <div
+                  key={staff.staffId}
+                  className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4"
+                >
+                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-white">
+                        {index + 1}. {staff.name}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {staff.sessions} sessions handled today
+                      </div>
+                    </div>
+                    <div className="text-left text-sm sm:text-right">
+                      <div className="font-semibold text-green-400">
+                        {formatBDT(staff.revenue)}
+                      </div>
+                      <div className="text-xs text-slate-500">Revenue</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex h-[240px] items-center justify-center text-sm text-slate-500">
+                No staff activity recorded today.
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
 
-      {/* Active sessions table */}
-      {activeSessions.length > 0 && (
-        <Card>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Card glow>
           <h3 className="mb-4 font-display text-sm font-semibold text-slate-300 uppercase tracking-wide">
-            Active Sessions ({activeSessions.length})
+            Top Devices Today
           </h3>
+          <div className="space-y-3">
+            {stats.topDevices.length > 0 ? (
+              stats.topDevices.map((device) => (
+                <div
+                  key={device.deviceId}
+                  className="flex flex-col items-start justify-between gap-3 rounded-xl border border-[#1e1e30] bg-[#0f0f18] px-4 py-3 sm:flex-row sm:items-center"
+                >
+                  <div>
+                    <div className="text-sm font-semibold text-white">
+                      {device.name}
+                    </div>
+                    <div className="text-xs text-slate-500">{device.type}</div>
+                  </div>
+                  <div className="text-left text-sm sm:text-right">
+                    <div className="font-semibold text-green-400">
+                      {formatBDT(device.revenue)}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {device.sessions} sessions
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex h-[240px] items-center justify-center text-sm text-slate-500">
+                No device usage recorded today.
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card glow>
+          <h3 className="mb-4 font-display text-sm font-semibold text-slate-300 uppercase tracking-wide">
+            System Snapshot
+          </h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Available Devices
+              </div>
+              <div className="mt-2 text-2xl font-display font-bold text-white">
+                {stats.devices.available}
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Running Devices
+              </div>
+              <div className="mt-2 text-2xl font-display font-bold text-white">
+                {stats.devices.running}
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Maintenance Queue
+              </div>
+              <div className="mt-2 text-2xl font-display font-bold text-white">
+                {stats.devices.maintenance}
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4">
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Disabled Devices
+              </div>
+              <div className="mt-2 text-2xl font-display font-bold text-white">
+                {stats.devices.disabled}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <Card>
+        <h3 className="mb-4 font-display text-sm font-semibold text-slate-300 uppercase tracking-wide">
+          Live Sessions ({activeSessions.length})
+        </h3>
+        {activeSessions.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-[640px] w-full text-sm">
               <thead>
                 <tr className="border-b border-[#1e1e30] text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="pb-3 pr-4">Device</th>
@@ -300,8 +551,12 @@ export default function DashboardPage() {
               </tbody>
             </table>
           </div>
-        </Card>
-      )}
+        ) : (
+          <div className="flex h-40 items-center justify-center text-sm text-slate-500">
+            No active sessions right now.
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

@@ -84,6 +84,7 @@ export default function DevicesPage() {
   const { user } = useAuth();
   const { timers, on, off } = useSocket();
   const [devices, setDevices] = useState<Device[]>([]);
+  const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -124,8 +125,12 @@ export default function DevicesPage() {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
-      const data = await deviceApi.list();
-      setDevices(data);
+      const [deviceData, activeSessionData] = await Promise.all([
+        deviceApi.list(),
+        sessionApi.active(),
+      ]);
+      setDevices(deviceData);
+      setActiveSessions(activeSessionData);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -386,7 +391,7 @@ export default function DevicesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-display text-2xl font-bold text-white">
             Devices
@@ -396,7 +401,7 @@ export default function DevicesPage() {
             {devices.length} total
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Button
             variant="ghost"
             size="sm"
@@ -427,6 +432,10 @@ export default function DevicesPage() {
                 key={d.id}
                 device={d}
                 timer={timers[d.id]}
+                activeSession={activeSessions.find(
+                  (session) => session.deviceId === d.id,
+                )}
+                onPrint={(session) => setReceiptSession(session)}
                 onEdit={user?.role === "ADMIN" ? openEditDevice : undefined}
                 onDelete={
                   user?.role === "ADMIN" ? handleDeleteDevice : undefined
@@ -955,7 +964,9 @@ interface TimerUpdate {
 interface DeviceCardProps {
   device: Device;
   timer?: TimerUpdate;
+  activeSession?: Session;
   onStart?: () => void;
+  onPrint?: (session: Session) => void;
   onEdit?: (d: Device) => void;
   onDelete?: (d: Device) => void;
 }
@@ -963,7 +974,9 @@ interface DeviceCardProps {
 function DeviceCard({
   device,
   timer,
+  activeSession,
   onStart,
+  onPrint,
   onEdit,
   onDelete,
 }: DeviceCardProps) {
@@ -1018,6 +1031,17 @@ function DeviceCard({
           <Button size="sm" className="flex-1" onClick={onStart}>
             <Gamepad2 size={14} />
             Start
+          </Button>
+        )}
+        {isRunning && activeSession && onPrint && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            onClick={() => onPrint(activeSession)}
+          >
+            <Printer size={14} />
+            Print Again
           </Button>
         )}
         {(onEdit ?? onDelete) && (

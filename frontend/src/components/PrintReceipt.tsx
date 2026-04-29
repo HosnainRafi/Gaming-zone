@@ -2,24 +2,27 @@ import { format } from "date-fns";
 import { Printer, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { Session } from "../api/sessions";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 interface Props {
   session: Session;
   onClose: () => void;
 }
 
-const ZONE_NAME = "GAMING ZONE";
-const ZONE_ADDRESS = "Your Gaming Zone Address Here";
-const ZONE_CONTACT = "";
-const ZONE_WEB = "";
-
 export function PrintReceipt({ session, onClose }: Props) {
+  const { settings } = useSiteSettings();
   const tx = session.transaction;
   const cashPaid = tx?.cashPaid ?? session.totalAmount;
   const change = Math.max(0, cashPaid - session.totalAmount);
   const receiptNo = tx?.receiptNumber ?? 0;
   const startTime = new Date(session.startTime);
   const endTime = new Date(session.endTime);
+  const zoneName = settings?.siteName ?? "Gaming Zone";
+  const zoneAddress = settings?.contact.address ?? "";
+  const zoneContact = [settings?.contact.phone, settings?.contact.whatsapp]
+    .filter(Boolean)
+    .join(" | ");
+  const zoneMeta = settings?.contact.email ?? "";
   const durationLabel =
     session.durationMinutes >= 60
       ? session.durationMinutes % 60 === 0
@@ -70,10 +73,10 @@ export function PrintReceipt({ session, onClose }: Props) {
           {/* Receipt preview */}
           <div id="receipt-preview" className="receipt-paper">
             <ReceiptContent
-              zoneName={ZONE_NAME}
-              zoneAddress={ZONE_ADDRESS}
-              zoneContact={ZONE_CONTACT}
-              zoneWeb={ZONE_WEB}
+              zoneName={zoneName}
+              zoneAddress={zoneAddress}
+              zoneContact={zoneContact}
+              zoneMeta={zoneMeta}
               receiptNo={receiptNo}
               customerName={session.customerName}
               customerPhone={session.customerPhone}
@@ -104,10 +107,10 @@ export function PrintReceipt({ session, onClose }: Props) {
       {createPortal(
         <div className="receipt-paper-print">
           <ReceiptContent
-            zoneName={ZONE_NAME}
-            zoneAddress={ZONE_ADDRESS}
-            zoneContact={ZONE_CONTACT}
-            zoneWeb={ZONE_WEB}
+            zoneName={zoneName}
+            zoneAddress={zoneAddress}
+            zoneContact={zoneContact}
+            zoneMeta={zoneMeta}
             receiptNo={receiptNo}
             customerName={session.customerName}
             customerPhone={session.customerPhone}
@@ -141,7 +144,7 @@ interface ContentProps {
   zoneName: string;
   zoneAddress: string;
   zoneContact: string;
-  zoneWeb: string;
+  zoneMeta: string;
   receiptNo: number;
   customerName: string | null;
   customerPhone: string | null;
@@ -294,8 +297,8 @@ function ReceiptContent(p: ContentProps) {
         <div className="font-bold">*** PAID ***</div>
         <div>Game on! Thanks for choosing {p.zoneName}</div>
         <Dashes />
-        {p.zoneContact && <div>Contact: {p.zoneContact}</div>}
-        {p.zoneWeb && <div>Web: {p.zoneWeb}</div>}
+        {p.zoneContact && <div>{p.zoneContact}</div>}
+        {p.zoneMeta && <div>{p.zoneMeta}</div>}
       </div>
     </div>
   );

@@ -47,3 +47,6 @@ export function requireAdmin(
   }
   next();
 }
+
+// Alias for authenticate
+export const requireAuth = authenticate;
