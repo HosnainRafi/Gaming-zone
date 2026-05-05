@@ -5,6 +5,7 @@ import { Layout } from "./components/layout/Layout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 import { SocketProvider } from "./context/SocketContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import DashboardPage from "./pages/DashboardPage";
 import DevicesPage from "./pages/DevicesPage";
 import GamesPage from "./pages/GamesPage";
@@ -130,11 +131,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <SiteSettingsProvider>
-          <AppRoutes />
-        </SiteSettingsProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <SiteSettingsProvider>
+            <AppRoutes />
+          </SiteSettingsProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

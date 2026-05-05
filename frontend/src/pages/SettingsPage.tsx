@@ -40,6 +40,7 @@ import {
 } from "../api/slider";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { ImageUploadInput } from "../components/ui/ImageUploadInput";
 import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 
@@ -693,13 +694,10 @@ function GamesTab() {
             }
             placeholder="FPS, RPG, Sports, etc."
           />
-          <Input
-            label="Image URL (optional)"
+          <ImageUploadInput
+            label="Image (optional)"
             value={formData.imageUrl || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, imageUrl: e.target.value })
-            }
-            placeholder="https://..."
+            onChange={(url) => setFormData({ ...formData, imageUrl: url })}
           />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowModal(false)}>
@@ -854,13 +852,10 @@ function SliderTab() {
         title={editingImage ? "Edit Slider Image" : "Add Slider Image"}
       >
         <div className="space-y-4">
-          <Input
-            label="Image URL"
+          <ImageUploadInput
+            label="Image"
             value={formData.imageUrl}
-            onChange={(e) =>
-              setFormData({ ...formData, imageUrl: e.target.value })
-            }
-            placeholder="https://..."
+            onChange={(url) => setFormData({ ...formData, imageUrl: url })}
           />
           <Input
             label="Title (optional)"

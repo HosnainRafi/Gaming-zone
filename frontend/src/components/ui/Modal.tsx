@@ -48,7 +48,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: Props) {
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-white transition"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-gz-border/40 hover:text-white transition"
           >
             <X size={18} />
           </button>

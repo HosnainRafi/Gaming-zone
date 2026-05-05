@@ -255,7 +255,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(connectTimeoutId);
       stopReminder();
       dismissReminderNotifications();
-      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      if (
+        audioContextRef.current &&
+        audioContextRef.current.state !== "closed"
+      ) {
         void audioContextRef.current.close().catch(() => undefined);
         audioContextRef.current = null;
       }

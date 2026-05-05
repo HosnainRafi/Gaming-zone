@@ -21,6 +21,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { StatCard } from "../components/ui/StatCard";
+import { useTheme } from "../context/ThemeContext";
 import { formatBDT } from "../utils/format";
 
 type Tab = "sales" | "sessions" | "staff" | "devices";
@@ -67,6 +68,22 @@ function downloadCsv(
 }
 
 export default function ReportsPage() {
+  const { theme } = useTheme();
+  const tooltipStyle =
+    theme === "light"
+      ? {
+          background: "#ffffff",
+          border: "1px solid #dee4ec",
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#1e293b",
+        }
+      : {
+          background: "#13131f",
+          border: "1px solid #1e1e30",
+          borderRadius: 8,
+          fontSize: 12,
+        };
   const [tab, setTab] = useState<Tab>("sales");
   const [from, setFrom] = useState(
     format(subDays(new Date(), 30), "yyyy-MM-dd"),
@@ -315,6 +332,22 @@ interface SalesData {
 }
 
 function SalesReport({ data }: { data: SalesData }) {
+  const { theme } = useTheme();
+  const tooltipStyle =
+    theme === "light"
+      ? {
+          background: "#ffffff",
+          border: "1px solid #dee4ec",
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#1e293b",
+        }
+      : {
+          background: "#13131f",
+          border: "1px solid #1e1e30",
+          borderRadius: 8,
+          fontSize: 12,
+        };
   const averageTicket = data.count > 0 ? data.total / data.count : 0;
   const paymentMap = new Map<
     string,
@@ -410,7 +443,7 @@ function SalesReport({ data }: { data: SalesData }) {
             <LineChart data={dailyData}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#1e1e30"
+                stroke={theme === "light" ? "#dee4ec" : "#1e1e30"}
                 vertical={false}
               />
               <XAxis
@@ -426,12 +459,7 @@ function SalesReport({ data }: { data: SalesData }) {
                 tickFormatter={(value) => `৳${value}`}
               />
               <Tooltip
-                contentStyle={{
-                  background: "#13131f",
-                  border: "1px solid #1e1e30",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
+                contentStyle={tooltipStyle}
                 formatter={(value: number, name: string) => [
                   name === "Revenue" ? formatBDT(value) : value,
                   name,
@@ -481,12 +509,7 @@ function SalesReport({ data }: { data: SalesData }) {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      background: "#13131f",
-                      border: "1px solid #1e1e30",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
+                    contentStyle={tooltipStyle}
                     formatter={(value: number) => [formatBDT(value), "Revenue"]}
                   />
                 </PieChart>
@@ -495,7 +518,7 @@ function SalesReport({ data }: { data: SalesData }) {
                 {paymentData.map((entry, index) => (
                   <div
                     key={entry.label}
-                    className="flex items-center justify-between rounded-lg border border-[#1a1a28] bg-[#0f0f18] px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-lg border border-gz-border bg-gz-surface px-3 py-2 text-sm"
                   >
                     <div className="flex items-center gap-2 text-slate-300">
                       <span
@@ -535,7 +558,7 @@ function SalesReport({ data }: { data: SalesData }) {
           {sourceData.map((source) => (
             <div
               key={source.label}
-              className="rounded-xl border border-[#1a1a28] bg-[#0f0f18] p-4"
+              className="rounded-xl border border-gz-border bg-gz-surface p-4"
             >
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 {source.label}
@@ -610,6 +633,22 @@ interface StaffEntry {
   revenue: number;
 }
 function StaffReport({ data }: { data: StaffEntry[] }) {
+  const { theme } = useTheme();
+  const tooltipStyle =
+    theme === "light"
+      ? {
+          background: "#ffffff",
+          border: "1px solid #dee4ec",
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#1e293b",
+        }
+      : {
+          background: "#13131f",
+          border: "1px solid #1e1e30",
+          borderRadius: 8,
+          fontSize: 12,
+        };
   const totals = data.reduce(
     (acc, entry) => {
       acc.sessions += entry.sessions;
@@ -658,7 +697,7 @@ function StaffReport({ data }: { data: StaffEntry[] }) {
           <BarChart data={data} barSize={28}>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#1e1e30"
+              stroke={theme === "light" ? "#dee4ec" : "#1e1e30"}
               vertical={false}
             />
             <XAxis
@@ -683,12 +722,7 @@ function StaffReport({ data }: { data: StaffEntry[] }) {
               tickLine={false}
             />
             <Tooltip
-              contentStyle={{
-                background: "#13131f",
-                border: "1px solid #1e1e30",
-                borderRadius: 8,
-                fontSize: 12,
-              }}
+              contentStyle={tooltipStyle}
               formatter={(value: number, name: string) => [
                 name === "Revenue" ? formatBDT(value) : value,
                 name,
@@ -757,6 +791,22 @@ interface DeviceEntry {
   revenue: number;
 }
 function DeviceReport({ data }: { data: DeviceEntry[] }) {
+  const { theme } = useTheme();
+  const tooltipStyle =
+    theme === "light"
+      ? {
+          background: "#ffffff",
+          border: "1px solid #dee4ec",
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#1e293b",
+        }
+      : {
+          background: "#13131f",
+          border: "1px solid #1e1e30",
+          borderRadius: 8,
+          fontSize: 12,
+        };
   const totals = data.reduce(
     (acc, entry) => {
       acc.sessions += entry.sessions;
@@ -816,7 +866,7 @@ function DeviceReport({ data }: { data: DeviceEntry[] }) {
             <BarChart data={data} barSize={28}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#1e1e30"
+                stroke={theme === "light" ? "#dee4ec" : "#1e1e30"}
                 vertical={false}
               />
               <XAxis
@@ -831,12 +881,7 @@ function DeviceReport({ data }: { data: DeviceEntry[] }) {
                 tickLine={false}
               />
               <Tooltip
-                contentStyle={{
-                  background: "#13131f",
-                  border: "1px solid #1e1e30",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
+                contentStyle={tooltipStyle}
                 formatter={(value: number, name: string) => [
                   name === "Revenue" ? formatBDT(value) : value,
                   name,
@@ -881,21 +926,14 @@ function DeviceReport({ data }: { data: DeviceEntry[] }) {
                       />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: "#13131f",
-                      border: "1px solid #1e1e30",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
+                  <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2">
                 {typeData.map((entry, index) => (
                   <div
                     key={entry.label}
-                    className="flex items-center justify-between rounded-lg border border-[#1a1a28] bg-[#0f0f18] px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-lg border border-gz-border bg-gz-surface px-3 py-2 text-sm"
                   >
                     <div className="flex items-center gap-2 text-slate-300">
                       <span
@@ -966,6 +1004,22 @@ interface SessionEntry {
   staff: { name: string | null };
 }
 function SessionsReport({ data }: { data: SessionEntry[] }) {
+  const { theme } = useTheme();
+  const tooltipStyle =
+    theme === "light"
+      ? {
+          background: "#ffffff",
+          border: "1px solid #dee4ec",
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#1e293b",
+        }
+      : {
+          background: "#13131f",
+          border: "1px solid #1e1e30",
+          borderRadius: 8,
+          fontSize: 12,
+        };
   const totals = data.reduce(
     (acc, entry) => {
       acc.totalAmount += entry.totalAmount;
@@ -1052,21 +1106,14 @@ function SessionsReport({ data }: { data: SessionEntry[] }) {
                       />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: "#13131f",
-                      border: "1px solid #1e1e30",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
+                  <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2">
                 {statusData.map((entry, index) => (
                   <div
                     key={entry.label}
-                    className="flex items-center justify-between rounded-lg border border-[#1a1a28] bg-[#0f0f18] px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-lg border border-gz-border bg-gz-surface px-3 py-2 text-sm"
                   >
                     <div className="flex items-center gap-2 text-slate-300">
                       <span
@@ -1098,7 +1145,7 @@ function SessionsReport({ data }: { data: SessionEntry[] }) {
             <BarChart data={deviceData} barSize={28}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#1e1e30"
+                stroke={theme === "light" ? "#dee4ec" : "#1e1e30"}
                 vertical={false}
               />
               <XAxis
@@ -1113,14 +1160,7 @@ function SessionsReport({ data }: { data: SessionEntry[] }) {
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip
-                contentStyle={{
-                  background: "#13131f",
-                  border: "1px solid #1e1e30",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-              />
+              <Tooltip contentStyle={tooltipStyle} />
               <Bar
                 dataKey="value"
                 fill="#06b6d4"

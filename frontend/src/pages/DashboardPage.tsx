@@ -32,6 +32,7 @@ import { Card } from "../components/ui/Card";
 import { PageSpinner } from "../components/ui/Spinner";
 import { StatCard } from "../components/ui/StatCard";
 import { useSocket } from "../context/SocketContext";
+import { useTheme } from "../context/ThemeContext";
 import { formatBDT, formatMs, remainingMsFromEndTime } from "../utils/format";
 
 export default function DashboardPage() {
@@ -40,6 +41,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const { connectionMode, timers, on, off } = useSocket();
+  const { theme } = useTheme();
+  const tooltipStyle =
+    theme === "light"
+      ? {
+          background: "#ffffff",
+          border: "1px solid #dee4ec",
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#1e293b",
+        }
+      : {
+          background: "#13131f",
+          border: "1px solid #1e1e30",
+          borderRadius: 8,
+          fontSize: 12,
+        };
 
   const load = async () => {
     try {
@@ -234,7 +251,7 @@ export default function DashboardPage() {
             <ComposedChart data={stats.trends.last7Days}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#1e1e30"
+                stroke={theme === "light" ? "#dee4ec" : "#1e1e30"}
                 vertical={false}
               />
               <XAxis
@@ -260,12 +277,7 @@ export default function DashboardPage() {
               />
               <Tooltip
                 cursor={{ fill: "rgba(124,58,237,0.08)" }}
-                contentStyle={{
-                  background: "#13131f",
-                  border: "1px solid #1e1e30",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
+                contentStyle={tooltipStyle}
                 formatter={(value: number, name: string) => [
                   name === "Revenue" ? formatBDT(value) : value,
                   name,
@@ -318,12 +330,7 @@ export default function DashboardPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      background: "#13131f",
-                      border: "1px solid #1e1e30",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
+                    contentStyle={tooltipStyle}
                     formatter={(value: number) => [formatBDT(value), "Revenue"]}
                   />
                 </PieChart>
@@ -332,7 +339,7 @@ export default function DashboardPage() {
                 {paymentChartData.map((item, index) => (
                   <div
                     key={item.label}
-                    className="flex flex-col items-start justify-between gap-2 rounded-lg border border-[#1e1e30] bg-[#0f0f18] px-3 py-2 text-sm sm:flex-row sm:items-center"
+                    className="flex flex-col items-start justify-between gap-2 rounded-lg border border-gz-border bg-gz-surface px-3 py-2 text-sm sm:flex-row sm:items-center"
                   >
                     <div className="flex items-center gap-2 text-slate-300">
                       <span
@@ -373,7 +380,7 @@ export default function DashboardPage() {
             <BarChart data={deviceChartData} barSize={28} layout="vertical">
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#1e1e30"
+                stroke={theme === "light" ? "#dee4ec" : "#1e1e30"}
                 horizontal={false}
               />
               <XAxis
@@ -393,12 +400,7 @@ export default function DashboardPage() {
               />
               <Tooltip
                 cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                contentStyle={{
-                  background: "#13131f",
-                  border: "1px solid #1e1e30",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
+                contentStyle={tooltipStyle}
               />
               <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                 {deviceChartData.map((entry) => (
@@ -418,7 +420,7 @@ export default function DashboardPage() {
               stats.staffLeaderboard.map((staff, index) => (
                 <div
                   key={staff.staffId}
-                  className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4"
+                  className="rounded-xl border border-gz-border bg-gz-surface p-4"
                 >
                   <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
                     <div>
@@ -457,7 +459,7 @@ export default function DashboardPage() {
               stats.topDevices.map((device) => (
                 <div
                   key={device.deviceId}
-                  className="flex flex-col items-start justify-between gap-3 rounded-xl border border-[#1e1e30] bg-[#0f0f18] px-4 py-3 sm:flex-row sm:items-center"
+                  className="flex flex-col items-start justify-between gap-3 rounded-xl border border-gz-border bg-gz-surface px-4 py-3 sm:flex-row sm:items-center"
                 >
                   <div>
                     <div className="text-sm font-semibold text-white">
@@ -488,7 +490,7 @@ export default function DashboardPage() {
             System Snapshot
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4">
+            <div className="rounded-xl border border-gz-border bg-gz-surface p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Available Devices
               </div>
@@ -496,7 +498,7 @@ export default function DashboardPage() {
                 {stats.devices.available}
               </div>
             </div>
-            <div className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4">
+            <div className="rounded-xl border border-gz-border bg-gz-surface p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Running Devices
               </div>
@@ -504,7 +506,7 @@ export default function DashboardPage() {
                 {stats.devices.running}
               </div>
             </div>
-            <div className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4">
+            <div className="rounded-xl border border-gz-border bg-gz-surface p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Maintenance Queue
               </div>
@@ -512,7 +514,7 @@ export default function DashboardPage() {
                 {stats.devices.maintenance}
               </div>
             </div>
-            <div className="rounded-xl border border-[#1e1e30] bg-[#0f0f18] p-4">
+            <div className="rounded-xl border border-gz-border bg-gz-surface p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Disabled Devices
               </div>
@@ -532,7 +534,7 @@ export default function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="min-w-[640px] w-full text-sm">
               <thead>
-                <tr className="border-b border-[#1e1e30] text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-gz-border text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="pb-3 pr-4">Device</th>
                   <th className="pb-3 pr-4">Staff</th>
                   <th className="pb-3 pr-4">Duration</th>
@@ -540,7 +542,7 @@ export default function DashboardPage() {
                   <th className="pb-3">Remaining</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1a1a28]">
+              <tbody className="divide-y divide-gz-border">
                 {activeSessions.map((s) => {
                   const timer = timers[s.deviceId] ?? {
                     remainingMs: remainingMsFromEndTime(s.endTime, nowMs),

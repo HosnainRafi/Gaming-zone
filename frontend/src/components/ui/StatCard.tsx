@@ -50,7 +50,7 @@ export function StatCard({
   return (
     <div
       className={clsx(
-        "flex flex-col items-start gap-3 rounded-xl border border-[#1e1e30] bg-[#13131f] p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5",
+        "flex flex-col items-start gap-3 rounded-xl border border-gz-border bg-gz-card p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5",
         glow && `shadow-lg ${c.ring}`,
       )}
     >

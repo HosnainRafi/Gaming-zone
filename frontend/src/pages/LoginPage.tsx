@@ -26,7 +26,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#080810] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gz-bg p-4">
       {/* Background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-96 w-96 rounded-full bg-violet-600/10 blur-3xl" />
@@ -47,7 +47,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-[#1e1e30] bg-[#13131f] p-8 shadow-2xl">
+        <div className="rounded-2xl border border-gz-border bg-gz-card p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
               label="Email"

@@ -9,7 +9,9 @@ import {
   LogOut,
   Menu,
   MonitorPlay,
+  Moon,
   Settings,
+  Sun,
   Tag,
   Users,
   Volume2,
@@ -21,6 +23,7 @@ import {
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
+import { useTheme } from "../../context/ThemeContext";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -57,6 +60,7 @@ export function Sidebar({
     setVisualEnabled,
     stopReminder,
   } = useSocket();
+  const { theme, toggleTheme } = useTheme();
   const collapsed = !mobileExpanded;
   const labelClass = collapsed ? "hidden md:block" : "block";
   const justifyClass = collapsed
@@ -194,7 +198,9 @@ export function Sidebar({
           >
             <Bell size={14} className="mt-0.5 text-amber-300" />
             <div className={labelClass}>
-              <p className="text-xs font-medium text-slate-200">End reminders</p>
+              <p className="text-xs font-medium text-slate-200">
+                End reminders
+              </p>
               <p className="text-[10px] text-slate-500">
                 10 second alert when a device time finishes
               </p>
@@ -241,6 +247,51 @@ export function Sidebar({
             ) : null}
           </div>
         </div>
+
+        {/* Theme toggle */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={
+            theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+          }
+          className={clsx(
+            "flex w-full items-center rounded-lg border border-gz-border bg-gz-card px-3 py-2.5 transition hover:border-violet-500/40",
+            collapsed ? "justify-center md:justify-between" : "justify-between",
+          )}
+        >
+          <span
+            className={clsx("flex items-center gap-2", labelClass ? "" : "")}
+          >
+            {theme === "dark" ? (
+              <Sun size={14} className="shrink-0 text-amber-400" />
+            ) : (
+              <Moon size={14} className="shrink-0 text-violet-400" />
+            )}
+            <span
+              className={clsx("text-xs font-medium text-slate-300", labelClass)}
+            >
+              {theme === "dark" ? "Light mode" : "Dark mode"}
+            </span>
+          </span>
+          {/* Pill toggle — only visible when label is visible */}
+          <span
+            className={clsx(
+              "relative flex h-5 w-9 items-center rounded-full border transition-colors duration-200",
+              labelClass,
+              theme === "dark"
+                ? "border-slate-600 bg-slate-700"
+                : "border-violet-400 bg-violet-500",
+            )}
+          >
+            <span
+              className={clsx(
+                "h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                theme === "dark" ? "translate-x-0.5" : "translate-x-[18px]",
+              )}
+            />
+          </span>
+        </button>
 
         <div
           className={clsx(

@@ -174,7 +174,7 @@ export default function OffersPage() {
                   />
                 </div>
 
-                <div className="rounded-lg bg-[#0f0f1a] border border-[#1e1e30] px-4 py-3 mb-4">
+                <div className="rounded-lg bg-gz-surface border border-gz-border px-4 py-3 mb-4">
                   <p className="text-xs text-slate-500 mb-1">Discount</p>
                   <p className="font-display text-2xl font-bold text-violet-400">
                     {o.type === "PERCENT"

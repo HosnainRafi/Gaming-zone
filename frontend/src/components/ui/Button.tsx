@@ -14,9 +14,9 @@ const variants = {
   primary:
     "bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/40",
   danger: "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/40",
-  ghost: "bg-transparent hover:bg-white/5 text-slate-300 hover:text-white",
+  ghost: "bg-transparent hover:bg-gz-border/40 text-slate-300 hover:text-white",
   outline:
-    "border border-[#1e1e30] hover:border-violet-500/50 bg-transparent text-slate-300 hover:text-white",
+    "border border-gz-border hover:border-violet-500/50 bg-transparent text-slate-300 hover:text-white",
 };
 
 const sizes = {

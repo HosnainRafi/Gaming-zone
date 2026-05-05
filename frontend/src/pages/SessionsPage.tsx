@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight, Printer, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   sessionApi,
@@ -139,7 +139,7 @@ export default function SessionsPage() {
                   <th className="pb-3 pr-4">Mode</th>
                   <th className="pb-3 pr-4">Amount</th>
                   <th className="pb-3 pr-4">Payment</th>
-                  <th className="pb-3 pr-4">Receipt</th>
+                  {/* <th className="pb-3 pr-4">Receipt</th> */}
                   <th className="pb-3">Status</th>
                 </tr>
               </thead>
@@ -257,7 +257,7 @@ function SessionRow({
           {pm.toLowerCase().replace("_", " ")}
         </span>
       </td>
-      <td className="py-3 pr-4">
+      {/* <td className="py-3 pr-4">
         <button
           type="button"
           onClick={onPrint}
@@ -266,7 +266,7 @@ function SessionRow({
           <Printer size={14} />
           Print
         </button>
-      </td>
+      </td> */}
       <td className="py-3">
         <Badge status={s.status} />
       </td>

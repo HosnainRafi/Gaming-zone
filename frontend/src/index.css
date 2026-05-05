@@ -21,6 +21,70 @@ body {
   font-family: var(--font-body);
 }
 
+/* ── Light mode overrides ── */
+/*
+  Tailwind v4 generates all color utilities as CSS custom properties,
+  so overriding them here cascades into every utility class automatically.
+  e.g.  text-white → color: var(--color-white)
+        bg-gz-card  → background: var(--color-gz-card)
+*/
+html.light {
+  color-scheme: light;
+
+  /* Admin layout tokens */
+  --color-gz-bg: #f0f4f8;
+  --color-gz-surface: #ffffff;
+  --color-gz-card: #f8fafc;
+  --color-gz-border: #dee4ec;
+
+  /* Remap dark-mode "light text" to dark text for light backgrounds.
+     In dark mode slate-200 was used as bright/heading text;
+     in light mode those same spots need dark ink. */
+  --color-white: #0f172a;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #1e293b;
+  --color-slate-300: #334155;
+  --color-slate-400: #475569;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+
+  /* Accent tones — shift to deeper hue for light-bg readability */
+  --color-violet-300: #5b21b6;
+  --color-violet-400: #6d28d9;
+  --color-amber-300: #b45309;
+  --color-amber-400: #92400e;
+  --color-green-400: #15803d;
+  --color-cyan-400: #0e7490;
+  --color-red-400: #b91c1c;
+}
+
+html.light body {
+  color: #1e293b;
+}
+
+/*
+  Restore proper white text INSIDE solid coloured button / badge
+  backgrounds so labels remain legible on dark violet/red/orange.
+  CSS custom properties cascade, so a local override wins over the
+  html.light root override for everything nested inside.
+*/
+html.light .bg-violet-600,
+html.light .bg-violet-500,
+html.light .bg-red-600,
+html.light .bg-red-500,
+html.light .bg-orange-500,
+html.light .bg-orange-400,
+html.light .bg-green-500,
+html.light .bg-green-600,
+html.light .bg-amber-500 {
+  --color-white: #ffffff;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -35,6 +99,32 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #2d2d48;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #b0bec8;
+}
+
+/* ── Light mode: native select/option backgrounds ── */
+html.light select,
+html.light select option {
+  background-color: #ffffff;
+  color: #1e293b;
+}
+
+/* ── Light mode: table row hover ── */
+html.light tr:hover {
+  background-color: rgb(0 0 0 / 0.03);
+}
+
+/* ── Light mode: icon button hover fix ── */
+html.light .hover\:bg-white\/5:hover,
+html.light .hover\:bg-white\/\[0\.02\]:hover {
+  background-color: rgb(0 0 0 / 0.04);
+}
+
+html.light .hover\:bg-white\/10:hover {
+  background-color: rgb(0 0 0 / 0.07);
 }
 
 /* ── Thermal Receipt ── */
