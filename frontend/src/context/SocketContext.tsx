@@ -9,6 +9,7 @@ import {
 } from "react";
 import toast from "react-hot-toast";
 import { io, type Socket } from "socket.io-client";
+import { sessionApi, type Session } from "../api/sessions";
 
 interface TimerUpdate {
   sessionId: string;
@@ -265,6 +266,76 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       socket.disconnect();
     };
   }, [dismissReminderNotifications, startReminder, stopReminder]);
+
+  // Polling-based session-end detection (when socket is not connected)
+  const prevActiveSessionIdsRef = useRef<Set<string>>(new Set());
+  const prevActiveSessionNamesRef = useRef<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    if (connectionMode !== "polling") return;
+
+    let cancelled = false;
+
+    const pollActiveSessions = async () => {
+      try {
+        const activeSessions: Session[] = await sessionApi.active();
+        if (cancelled) return;
+
+        const currentIds = new Set(activeSessions.map((s) => s.id));
+        const prevIds = prevActiveSessionIdsRef.current;
+        const prevNames = prevActiveSessionNamesRef.current;
+
+        // Detect sessions that ended (were active before but not anymore)
+        if (prevIds.size > 0) {
+          for (const prevId of prevIds) {
+            if (!currentIds.has(prevId)) {
+              // Session ended
+              const deviceLabel = prevNames.get(prevId)?.trim() || "A device";
+
+              if (visualEnabledRef.current) {
+                const toastId = `session-ended-${prevId}`;
+                reminderToastIdsRef.current.add(toastId);
+                toast.success(`${deviceLabel} time has ended.`, {
+                  id: toastId,
+                  duration: 10_000,
+                });
+              }
+
+              startReminder();
+            }
+          }
+        }
+
+        // Update refs for next poll
+        prevActiveSessionIdsRef.current = currentIds;
+        const nameMap = new Map<string, string>();
+        for (const s of activeSessions) {
+          nameMap.set(s.id, s.device.name);
+        }
+        prevActiveSessionNamesRef.current = nameMap;
+      } catch {
+        // Ignore polling errors silently
+      }
+    };
+
+    // Initial poll to populate the refs (no notification on first poll)
+    void sessionApi.active().then((sessions) => {
+      if (cancelled) return;
+      prevActiveSessionIdsRef.current = new Set(sessions.map((s) => s.id));
+      const nameMap = new Map<string, string>();
+      for (const s of sessions) {
+        nameMap.set(s.id, s.device.name);
+      }
+      prevActiveSessionNamesRef.current = nameMap;
+    }).catch(() => undefined);
+
+    const intervalId = window.setInterval(pollActiveSessions, 15_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [connectionMode, startReminder]);
 
   const on = (event: string, cb: (data: unknown) => void) => {
     socketRef.current?.on(event, cb);
