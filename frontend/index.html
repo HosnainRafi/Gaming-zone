@@ -10,11 +10,13 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet" />
-    <!-- Apply saved theme before first paint to avoid flash -->
+    <!-- Apply saved theme before first paint to avoid flash (admin pages only) -->
     <script>
         (function () {
             try {
-                if (localStorage.getItem('gz_theme') === 'light') {
+                var path = window.location.pathname;
+                var adminPaths = ['/dashboard', '/devices', '/members', '/sessions', '/offers', '/reports', '/staff', '/settings'];
+                if (localStorage.getItem('gz_theme') === 'light' && adminPaths.some(function (p) { return path.startsWith(p); })) {
                     document.documentElement.classList.add('light');
                 }
             } catch (e) { }
