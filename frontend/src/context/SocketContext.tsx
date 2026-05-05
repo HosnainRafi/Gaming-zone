@@ -319,15 +319,18 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     };
 
     // Initial poll to populate the refs (no notification on first poll)
-    void sessionApi.active().then((sessions) => {
-      if (cancelled) return;
-      prevActiveSessionIdsRef.current = new Set(sessions.map((s) => s.id));
-      const nameMap = new Map<string, string>();
-      for (const s of sessions) {
-        nameMap.set(s.id, s.device.name);
-      }
-      prevActiveSessionNamesRef.current = nameMap;
-    }).catch(() => undefined);
+    void sessionApi
+      .active()
+      .then((sessions) => {
+        if (cancelled) return;
+        prevActiveSessionIdsRef.current = new Set(sessions.map((s) => s.id));
+        const nameMap = new Map<string, string>();
+        for (const s of sessions) {
+          nameMap.set(s.id, s.device.name);
+        }
+        prevActiveSessionNamesRef.current = nameMap;
+      })
+      .catch(() => undefined);
 
     const intervalId = window.setInterval(pollActiveSessions, 15_000);
 

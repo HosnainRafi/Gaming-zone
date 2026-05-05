@@ -26,11 +26,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    if (theme === "light") {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
     localStorage.setItem("gz_theme", theme);
   }, [theme]);
 

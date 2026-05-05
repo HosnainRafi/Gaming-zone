@@ -1,9 +1,22 @@
 import { Menu } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 import { Sidebar } from "./Sidebar";
 
 export function Layout({ children }: { children: ReactNode }) {
+  const { theme } = useTheme();
   const [mobileExpanded, setMobileExpanded] = useState(false);
+
+  useEffect(() => {
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+    }
+    return () => {
+      document.documentElement.classList.remove("light");
+    };
+  }, [theme]);
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-gz-bg">
