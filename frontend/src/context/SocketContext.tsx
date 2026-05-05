@@ -1,11 +1,13 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import toast from "react-hot-toast";
 import { io, type Socket } from "socket.io-client";
 
 interface TimerUpdate {
@@ -15,12 +17,35 @@ interface TimerUpdate {
   endTime: string;
 }
 
+interface SessionEndedPayload {
+  sessionId: string;
+  deviceId: string;
+  deviceName?: string;
+}
+
 type ConnectionMode = "connecting" | "realtime" | "polling";
+
+const SOUND_ENABLED_KEY = "gz_end_reminder_sound";
+const VISUAL_ENABLED_KEY = "gz_end_reminder_visual";
+
+function readStoredPreference(key: string, fallback: boolean) {
+  if (typeof window === "undefined") return fallback;
+
+  const value = window.localStorage.getItem(key);
+  if (value == null) return fallback;
+  return value === "true";
+}
 
 interface SocketContextValue {
   connected: boolean;
   connectionMode: ConnectionMode;
   timers: Record<string, TimerUpdate>; // keyed by deviceId
+  reminderActive: boolean;
+  soundEnabled: boolean;
+  visualEnabled: boolean;
+  setSoundEnabled: (enabled: boolean) => void;
+  setVisualEnabled: (enabled: boolean) => void;
+  stopReminder: () => void;
   on: (event: string, cb: (data: unknown) => void) => void;
   off: (event: string, cb: (data: unknown) => void) => void;
 }
@@ -30,10 +55,138 @@ const SocketContext = createContext<SocketContextValue | null>(null);
 export function SocketProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
   const hasEverConnectedRef = useRef(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioIntervalRef = useRef<number | null>(null);
+  const audioTimeoutRef = useRef<number | null>(null);
+  const reminderToastIdsRef = useRef<Set<string>>(new Set());
   const [connected, setConnected] = useState(false);
   const [connectionMode, setConnectionMode] =
     useState<ConnectionMode>("connecting");
   const [timers, setTimers] = useState<Record<string, TimerUpdate>>({});
+  const [reminderActive, setReminderActive] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() =>
+    readStoredPreference(SOUND_ENABLED_KEY, true),
+  );
+  const [visualEnabled, setVisualEnabled] = useState(() =>
+    readStoredPreference(VISUAL_ENABLED_KEY, true),
+  );
+  const soundEnabledRef = useRef(soundEnabled);
+  const visualEnabledRef = useRef(visualEnabled);
+
+  const stopReminder = useCallback(() => {
+    if (audioIntervalRef.current != null) {
+      window.clearInterval(audioIntervalRef.current);
+      audioIntervalRef.current = null;
+    }
+
+    if (audioTimeoutRef.current != null) {
+      window.clearTimeout(audioTimeoutRef.current);
+      audioTimeoutRef.current = null;
+    }
+
+    setReminderActive(false);
+  }, []);
+
+  const dismissReminderNotifications = useCallback(() => {
+    for (const toastId of reminderToastIdsRef.current) {
+      toast.dismiss(toastId);
+    }
+    reminderToastIdsRef.current.clear();
+  }, []);
+
+  const ensureAudioContext = useCallback(() => {
+    if (typeof window === "undefined") return null;
+
+    const AudioContextConstructor =
+      window.AudioContext ||
+      (
+        window as typeof window & {
+          webkitAudioContext?: typeof AudioContext;
+        }
+      ).webkitAudioContext;
+
+    if (!AudioContextConstructor) return null;
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextConstructor();
+    }
+
+    return audioContextRef.current;
+  }, []);
+
+  const playBeep = useCallback(() => {
+    const audioContext = ensureAudioContext();
+    if (!audioContext) return;
+
+    if (audioContext.state === "suspended") {
+      void audioContext.resume().catch(() => undefined);
+    }
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    const startAt = audioContext.currentTime;
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, startAt);
+    gainNode.gain.setValueAtTime(0.0001, startAt);
+    gainNode.gain.exponentialRampToValueAtTime(0.08, startAt + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.22);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + 0.24);
+  }, [ensureAudioContext]);
+
+  const startReminder = useCallback(() => {
+    if (!soundEnabledRef.current) return;
+
+    stopReminder();
+    setReminderActive(true);
+    playBeep();
+
+    audioIntervalRef.current = window.setInterval(() => {
+      playBeep();
+    }, 800);
+    audioTimeoutRef.current = window.setTimeout(() => {
+      stopReminder();
+    }, 10_000);
+  }, [playBeep, stopReminder]);
+
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+    window.localStorage.setItem(SOUND_ENABLED_KEY, String(soundEnabled));
+
+    if (!soundEnabled) {
+      stopReminder();
+    }
+  }, [soundEnabled, stopReminder]);
+
+  useEffect(() => {
+    visualEnabledRef.current = visualEnabled;
+    window.localStorage.setItem(VISUAL_ENABLED_KEY, String(visualEnabled));
+
+    if (!visualEnabled) {
+      dismissReminderNotifications();
+    }
+  }, [dismissReminderNotifications, visualEnabled]);
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      const audioContext = ensureAudioContext();
+      if (audioContext?.state === "suspended") {
+        void audioContext.resume().catch(() => undefined);
+      }
+    };
+
+    window.addEventListener("pointerdown", unlockAudio);
+    window.addEventListener("keydown", unlockAudio);
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, [ensureAudioContext]);
 
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_API_URL || "/";
@@ -78,19 +231,37 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       });
     });
 
-    socket.on("sessionEnded", ({ deviceId }: { deviceId: string }) => {
+    socket.on("sessionEnded", (payload: SessionEndedPayload) => {
       setTimers((prev) => {
         const next = { ...prev };
-        delete next[deviceId];
+        delete next[payload.deviceId];
         return next;
       });
+
+      if (visualEnabledRef.current) {
+        const deviceLabel = payload.deviceName?.trim() || "A device";
+        const toastId = `session-ended-${payload.sessionId}`;
+        reminderToastIdsRef.current.add(toastId);
+        toast.success(`${deviceLabel} time has ended.`, {
+          id: toastId,
+          duration: 10_000,
+        });
+      }
+
+      startReminder();
     });
 
     return () => {
       window.clearTimeout(connectTimeoutId);
+      stopReminder();
+      dismissReminderNotifications();
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        void audioContextRef.current.close().catch(() => undefined);
+        audioContextRef.current = null;
+      }
       socket.disconnect();
     };
-  }, []);
+  }, [dismissReminderNotifications, startReminder, stopReminder]);
 
   const on = (event: string, cb: (data: unknown) => void) => {
     socketRef.current?.on(event, cb);
@@ -101,7 +272,19 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   return (
     <SocketContext.Provider
-      value={{ connected, connectionMode, timers, on, off }}
+      value={{
+        connected,
+        connectionMode,
+        timers,
+        reminderActive,
+        soundEnabled,
+        visualEnabled,
+        setSoundEnabled,
+        setVisualEnabled,
+        stopReminder,
+        on,
+        off,
+      }}
     >
       {children}
     </SocketContext.Provider>

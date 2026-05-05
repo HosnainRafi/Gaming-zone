@@ -139,7 +139,10 @@ export async function getDashboardStats() {
   const byStatus = Object.fromEntries(
     deviceStats.map((d) => [d.status, d._count.id]),
   );
-  const totalDevices = Object.values(byStatus).reduce((sum, value) => sum + value, 0);
+  const totalDevices = Object.values(byStatus).reduce(
+    (sum, value) => sum + value,
+    0,
+  );
   const runningDevices = byStatus["RUNNING"] ?? 0;
 
   const completedToday = todaySessions.filter(
@@ -157,7 +160,8 @@ export async function getDashboardStats() {
       )
       .filter((value): value is string => Boolean(value)),
   ).size;
-  const todaySalesCount = paymentTransactions.length + paymentMembershipSales.length;
+  const todaySalesCount =
+    paymentTransactions.length + paymentMembershipSales.length;
 
   const trendMap = new Map(
     Array.from({ length: 7 }, (_, offset) => {
@@ -168,7 +172,9 @@ export async function getDashboardStats() {
         key,
         {
           date: key,
-          label: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date),
+          label: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(
+            date,
+          ),
           revenue: 0,
           sessions: 0,
         },
@@ -206,7 +212,13 @@ export async function getDashboardStats() {
 
   const deviceMap = new Map<
     string,
-    { deviceId: string; name: string; type: string; sessions: number; revenue: number }
+    {
+      deviceId: string;
+      name: string;
+      type: string;
+      sessions: number;
+      revenue: number;
+    }
   >();
   const staffMap = new Map<
     string,
@@ -260,7 +272,9 @@ export async function getDashboardStats() {
       maintenance: byStatus["MAINTENANCE"] ?? 0,
       disabled: byStatus["DISABLED"] ?? 0,
       occupancyPct:
-        totalDevices > 0 ? Math.round((runningDevices / totalDevices) * 100) : 0,
+        totalDevices > 0
+          ? Math.round((runningDevices / totalDevices) * 100)
+          : 0,
     },
     customers: {
       total: totalCustomers,

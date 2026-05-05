@@ -28,7 +28,6 @@ import {
 import { dashboardApi, type DashboardStats } from "../api/dashboard";
 import type { Session } from "../api/sessions";
 import { sessionApi } from "../api/sessions";
-import { Badge } from "../components/ui/Badge";
 import { Card } from "../components/ui/Card";
 import { PageSpinner } from "../components/ui/Spinner";
 import { StatCard } from "../components/ui/StatCard";

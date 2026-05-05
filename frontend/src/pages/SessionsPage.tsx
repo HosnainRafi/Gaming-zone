@@ -23,19 +23,22 @@ export default function SessionsPage() {
   const [loading, setLoading] = useState(true);
   const [receiptSession, setReceiptSession] = useState<Session | null>(null);
 
-  const load = useCallback(async (p: number, silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const res = await sessionApi.list({
-        page: p,
-        limit: 15,
-        status: status || undefined,
-      });
-      setData(res);
-    } finally {
-      setLoading(false);
-    }
-  }, [status]);
+  const load = useCallback(
+    async (p: number, silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const res = await sessionApi.list({
+          page: p,
+          limit: 15,
+          status: status || undefined,
+        });
+        setData(res);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [status],
+  );
 
   useEffect(() => {
     setPage(1);

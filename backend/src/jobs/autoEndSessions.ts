@@ -13,8 +13,8 @@ export function startAutoEndJob(): NodeJS.Timeout {
       if (ended.length === 0) return;
 
       const io = getIO();
-      for (const { sessionId, deviceId } of ended) {
-        io.emit("sessionEnded", { sessionId, deviceId });
+      for (const { sessionId, deviceId, deviceName } of ended) {
+        io.emit("sessionEnded", { sessionId, deviceId, deviceName });
       }
       io.emit("devicesUpdated");
 

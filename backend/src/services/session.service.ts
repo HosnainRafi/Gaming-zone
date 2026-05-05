@@ -115,21 +115,30 @@ function serializeSession(session: Record<string, unknown>) {
 
 export async function reconcileExpiredSessions(
   now = new Date(),
-): Promise<{ sessionId: string; deviceId: string }[]> {
+): Promise<{ sessionId: string; deviceId: string; deviceName: string }[]> {
   const expired = await prisma.session.findMany({
     where: { status: "ACTIVE", endTime: { lte: now } },
-    select: { id: true, deviceId: true, membershipId: true },
+    select: {
+      id: true,
+      deviceId: true,
+      membershipId: true,
+      device: { select: { name: true } },
+    },
   });
 
   if (expired.length === 0) return [];
 
   const sessionIds = expired.map((session) => session.id);
-  const deviceIds = Array.from(new Set(expired.map((session) => session.deviceId)));
+  const deviceIds = Array.from(
+    new Set(expired.map((session) => session.deviceId)),
+  );
   const membershipIds = Array.from(
     new Set(
       expired
         .map((session) => session.membershipId)
-        .filter((membershipId): membershipId is string => Boolean(membershipId)),
+        .filter((membershipId): membershipId is string =>
+          Boolean(membershipId),
+        ),
     ),
   );
 
@@ -158,6 +167,7 @@ export async function reconcileExpiredSessions(
   return expired.map((session) => ({
     sessionId: session.id,
     deviceId: session.deviceId,
+    deviceName: session.device.name,
   }));
 }
 
@@ -461,7 +471,7 @@ export async function getSessions(filters: {
  * Returns the IDs of sessions that were auto-ended.
  */
 export async function autoEndExpiredSessions(): Promise<
-  { sessionId: string; deviceId: string }[]
+  { sessionId: string; deviceId: string; deviceName: string }[]
 > {
   return reconcileExpiredSessions();
 }
