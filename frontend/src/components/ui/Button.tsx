@@ -8,12 +8,13 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  "inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer select-none";
+  "inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer select-none active:scale-[0.97]";
 
 const variants = {
   primary:
-    "bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/40",
-  danger: "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/40",
+    "bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/40 hover:shadow-violet-900/60",
+  danger:
+    "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/40 hover:shadow-red-900/60",
   ghost: "bg-transparent hover:bg-gz-border/40 text-slate-300 hover:text-white",
   outline:
     "border border-gz-border hover:border-violet-500/50 bg-transparent text-slate-300 hover:text-white",

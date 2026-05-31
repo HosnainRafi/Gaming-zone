@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 
 interface Props {
@@ -48,15 +49,19 @@ export function StatCard({
 }: Props) {
   const c = colorMap[color];
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={clsx(
-        "flex flex-col items-start gap-3 rounded-xl border border-gz-border bg-gz-card p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5",
+        "flex flex-col items-start gap-3 rounded-xl border border-gz-border bg-gz-card p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5 transition-shadow hover:shadow-lg",
         glow && `shadow-lg ${c.ring}`,
       )}
     >
       <div
         className={clsx(
-          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl",
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl transition-transform",
           c.icon,
         )}
       >
@@ -76,6 +81,6 @@ export function StatCard({
         </p>
         {sub && <p className="text-xs text-slate-600 mt-0.5">{sub}</p>}
       </div>
-    </div>
+    </motion.div>
   );
 }

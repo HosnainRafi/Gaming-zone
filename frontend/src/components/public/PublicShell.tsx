@@ -1,4 +1,5 @@
-﻿import {
+﻿import { motion } from "framer-motion";
+import {
   Clock,
   Facebook,
   Gamepad2,
@@ -17,8 +18,9 @@ import { useSiteSettings } from "../../context/SiteSettingsContext";
 
 const links = [
   { to: "/", label: "Home" },
-  { to: "/pricing", label: "Pricing" },
   { to: "/games", label: "Games" },
+  { to: "/pricing", label: "Pricing" },
+  { to: "/about", label: "About Us" },
 ];
 
 export function PublicShell({ children }: { children: ReactNode }) {
@@ -38,8 +40,11 @@ export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[#070b10] text-white">
       {/* Header */}
-      <header
-        className={`sticky top-0 z-50 transition-all duration-300 ${
+      <motion.header
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className={`sticky top-0 z-50 transition-all duration-500 ${
           scrolled
             ? "border-b border-white/8 bg-[#070b10]/96 shadow-2xl shadow-black/40 backdrop-blur-2xl"
             : "border-b border-transparent bg-[#070b10]/70 backdrop-blur-md"
@@ -47,9 +52,13 @@ export function PublicShell({ children }: { children: ReactNode }) {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
           <Link to="/" className="group flex items-center gap-3">
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/25 transition-all group-hover:shadow-orange-500/50">
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/25 transition-all group-hover:shadow-orange-500/50"
+            >
               <Gamepad2 size={20} className="text-white" />
-            </div>
+            </motion.div>
             <div className="flex flex-col">
               <span className="font-display text-base font-bold uppercase tracking-wider leading-none text-white">
                 {settings?.siteName || "Gamers Den"}
@@ -64,7 +73,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           </Link>
 
           <nav className="hidden items-center gap-0.5 md:flex">
-            {links.map((link) => (
+            {links.map((link, idx) => (
               <NavLink
                 key={link.to}
                 to={link.to}
@@ -82,22 +91,25 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     >
                       {link.label}
                     </span>
-                    <span
-                      className={`absolute -bottom-px left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-orange-500 transition-all duration-200 ${
-                        isActive ? "w-5" : "w-0"
-                      }`}
+                    <motion.span
+                      initial={false}
+                      animate={{ width: isActive ? 20 : 0 }}
+                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      className="absolute -bottom-px left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-gradient-to-r from-orange-500 to-red-500"
                     />
                   </>
                 )}
               </NavLink>
             ))}
-            <Link
-              to={token ? "/dashboard" : "/login"}
-              className="ml-4 flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-400 hover:shadow-orange-500/40 active:scale-95"
-            >
-              <Zap size={13} />
-              {token ? "Dashboard" : "Staff Login"}
-            </Link>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                to={token ? "/dashboard" : "/login"}
+                className="ml-4 flex items-center gap-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:shadow-orange-500/40"
+              >
+                <Zap size={13} />
+                {token ? "Dashboard" : "Staff Login"}
+              </Link>
+            </motion.div>
           </nav>
 
           <button
@@ -111,7 +123,13 @@ export function PublicShell({ children }: { children: ReactNode }) {
         </div>
 
         {mobileMenuOpen && (
-          <div className="border-t border-white/5 bg-[#070b10]/98 px-4 pb-5 pt-3 md:hidden">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="border-t border-white/5 bg-[#070b10]/98 px-4 pb-5 pt-3 md:hidden overflow-hidden"
+          >
             <nav className="flex flex-col gap-1">
               {links.map((link) => (
                 <NavLink
@@ -133,24 +151,30 @@ export function PublicShell({ children }: { children: ReactNode }) {
               <Link
                 to={token ? "/dashboard" : "/login"}
                 onClick={() => setMobileMenuOpen(false)}
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-400"
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-4 py-3 text-sm font-semibold text-white transition hover:from-orange-400 hover:to-red-400"
               >
                 <Zap size={14} />
                 {token ? "Dashboard" : "Staff Login"}
               </Link>
             </nav>
-          </div>
+          </motion.div>
         )}
-      </header>
+      </motion.header>
 
       <main>{children}</main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 bg-[#050810]">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <footer className="relative border-t border-white/5 bg-[#050810] overflow-hidden">
+        {/* Footer background effect */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute bottom-0 left-1/4 h-[300px] w-[300px] rounded-full bg-orange-500/3 blur-[100px]" />
+          <div className="absolute top-0 right-1/3 h-[200px] w-[200px] rounded-full bg-purple-500/3 blur-[80px]" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <Link to="/" className="flex items-center gap-3">
+              <Link to="/" className="group flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-600 shadow-md shadow-orange-500/20">
                   <Gamepad2 size={20} className="text-white" />
                 </div>
@@ -208,6 +232,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   { to: "/", label: "Home" },
                   { to: "/games", label: "Game Library" },
                   { to: "/pricing", label: "Hourly Rates" },
+                  { to: "/about", label: "About Us" },
                   { to: "/login", label: "Staff Portal" },
                 ].map((link) => (
                   <Link
@@ -319,6 +344,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className="border-t border-white/5">
+          <div
+            className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent"
+            style={{ marginTop: "-1px" }}
+          />
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-center sm:flex-row sm:text-left sm:px-6 lg:px-8">
             <p className="text-xs text-gray-600">
               {settings?.copyright ||

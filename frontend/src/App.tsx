@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 import { SocketProvider } from "./context/SocketContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import AboutUsPage from "./pages/AboutUsPage";
 import DashboardPage from "./pages/DashboardPage";
 import DevicesPage from "./pages/DevicesPage";
 import GamesPage from "./pages/GamesPage";
@@ -51,6 +52,7 @@ function AppRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/games" element={<GamesPage />} />
+      <Route path="/about" element={<AboutUsPage />} />
       <Route
         path="/login"
         element={token ? <Navigate to="/dashboard" replace /> : <LoginPage />}
