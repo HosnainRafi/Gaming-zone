@@ -1,4 +1,4 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Clock,
   Facebook,
@@ -15,6 +15,8 @@ import { type ReactNode, useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
+import { MagneticButton, ScrollProgress } from "../motion";
+import { SmoothScrollProvider } from "../motion/SmoothScroll";
 
 const links = [
   { to: "/", label: "Home" },
@@ -23,7 +25,7 @@ const links = [
   { to: "/about", label: "About Us" },
 ];
 
-export function PublicShell({ children }: { children: ReactNode }) {
+function PublicShellInner({ children }: { children: ReactNode }) {
   const { token } = useAuth();
   const { settings } = useSiteSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -38,16 +40,16 @@ export function PublicShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#070b10] text-white">
-      {/* Header */}
+    <div className="min-h-screen bg-[#0A0A0A] text-white">
+      {/* Tubelight Navbar */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className={`sticky top-0 z-50 transition-all duration-500 ${
           scrolled
-            ? "border-b border-white/8 bg-[#070b10]/96 shadow-2xl shadow-black/40 backdrop-blur-2xl"
-            : "border-b border-transparent bg-[#070b10]/70 backdrop-blur-md"
+            ? "border-b border-purple-500/10 bg-[#0A0A0A]/95 shadow-2xl shadow-purple-500/5 backdrop-blur-2xl"
+            : "border-b border-transparent bg-[#0A0A0A]/70 backdrop-blur-md"
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
@@ -55,7 +57,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <motion.div
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
-              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/25 transition-all group-hover:shadow-orange-500/50"
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 shadow-lg shadow-purple-500/30 transition-all group-hover:shadow-purple-500/60"
             >
               <Gamepad2 size={20} className="text-white" />
             </motion.div>
@@ -64,16 +66,17 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 {settings?.siteName || "Gamers Den"}
               </span>
               <div className="mt-0.5 flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-green-400">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-cyan-400">
                   Now Open
                 </span>
               </div>
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-0.5 md:flex">
-            {links.map((link, idx) => (
+          {/* Tubelight Nav Links */}
+          <nav className="hidden items-center gap-0.5 rounded-full border border-white/5 bg-white/[0.03] px-1.5 py-1.5 md:flex">
+            {links.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
@@ -83,7 +86,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 {({ isActive }) => (
                   <>
                     <span
-                      className={`transition-colors ${
+                      className={`relative z-10 transition-colors ${
                         isActive
                           ? "text-white"
                           : "text-gray-400 group-hover:text-white"
@@ -91,26 +94,41 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     >
                       {link.label}
                     </span>
-                    <motion.span
-                      initial={false}
-                      animate={{ width: isActive ? 20 : 0 }}
-                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                      className="absolute -bottom-px left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-gradient-to-r from-orange-500 to-red-500"
-                    />
+                    {/* Tubelight glow pill */}
+                    {isActive && (
+                      <motion.span
+                        layoutId="tubelight"
+                        className="absolute inset-0 rounded-full bg-white/[0.08]"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
+                    )}
+                    {/* Tubelight neon glow at top */}
+                    {isActive && (
+                      <motion.span
+                        layoutId="tubelight-glow"
+                        className="absolute -top-1.5 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-gradient-to-r from-purple-500 via-cyan-400 to-purple-500 shadow-[0_0_12px_rgba(124,58,237,0.8),0_0_4px_rgba(6,182,212,0.6)]"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
+                    )}
                   </>
                 )}
               </NavLink>
             ))}
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                to={token ? "/dashboard" : "/login"}
-                className="ml-4 flex items-center gap-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:shadow-orange-500/40"
-              >
-                <Zap size={13} />
-                {token ? "Dashboard" : "Staff Login"}
-              </Link>
-            </motion.div>
           </nav>
+
+          <div className="hidden md:block">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <MagneticButton strength={0.2}>
+                <Link
+                  to={token ? "/dashboard" : "/login"}
+                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-cyan-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 transition-all hover:shadow-purple-500/50 hover:brightness-110"
+                >
+                  <Zap size={13} />
+                  {token ? "Dashboard" : "Staff Login"}
+                </Link>
+              </MagneticButton>
+            </motion.div>
+          </div>
 
           <button
             type="button"
@@ -122,13 +140,14 @@ export function PublicShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
+        {/* Mobile menu */}
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="border-t border-white/5 bg-[#070b10]/98 px-4 pb-5 pt-3 md:hidden overflow-hidden"
+            initial={{ opacity: 0, height: 0, filter: "blur(4px)" }}
+            animate={{ opacity: 1, height: "auto", filter: "blur(0px)" }}
+            exit={{ opacity: 0, height: 0, filter: "blur(4px)" }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="border-t border-purple-500/10 bg-[#0A0A0A]/98 px-4 pb-5 pt-3 md:hidden overflow-hidden"
           >
             <nav className="flex flex-col gap-1">
               {links.map((link) => (
@@ -140,7 +159,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   className={({ isActive }) =>
                     `rounded-xl px-4 py-3 text-sm font-medium transition ${
                       isActive
-                        ? "bg-orange-500/15 text-orange-300"
+                        ? "bg-purple-500/15 text-purple-300"
                         : "text-gray-400 hover:bg-white/5 hover:text-white"
                     }`
                   }
@@ -151,7 +170,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
               <Link
                 to={token ? "/dashboard" : "/login"}
                 onClick={() => setMobileMenuOpen(false)}
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-4 py-3 text-sm font-semibold text-white transition hover:from-orange-400 hover:to-red-400"
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 px-4 py-3 text-sm font-semibold text-white transition hover:brightness-110"
               >
                 <Zap size={14} />
                 {token ? "Dashboard" : "Staff Login"}
@@ -164,18 +183,17 @@ export function PublicShell({ children }: { children: ReactNode }) {
       <main>{children}</main>
 
       {/* Footer */}
-      <footer className="relative border-t border-white/5 bg-[#050810] overflow-hidden">
-        {/* Footer background effect */}
+      <footer className="relative border-t border-white/5 bg-[#050508] overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute bottom-0 left-1/4 h-[300px] w-[300px] rounded-full bg-orange-500/3 blur-[100px]" />
-          <div className="absolute top-0 right-1/3 h-[200px] w-[200px] rounded-full bg-purple-500/3 blur-[80px]" />
+          <div className="absolute bottom-0 left-1/4 h-[300px] w-[300px] rounded-full bg-purple-500/5 blur-[100px]" />
+          <div className="absolute top-0 right-1/3 h-[200px] w-[200px] rounded-full bg-cyan-500/5 blur-[80px]" />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <Link to="/" className="group flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-600 shadow-md shadow-orange-500/20">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 shadow-md shadow-purple-500/20">
                   <Gamepad2 size={20} className="text-white" />
                 </div>
                 <span className="font-display text-base font-bold uppercase tracking-wider text-white">
@@ -193,7 +211,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Facebook"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-gray-400 transition hover:bg-orange-500/15 hover:text-orange-400"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-gray-400 transition hover:bg-purple-500/15 hover:text-purple-400"
                   >
                     <Facebook size={15} />
                   </a>
@@ -204,7 +222,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Messenger"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-gray-400 transition hover:bg-orange-500/15 hover:text-orange-400"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-gray-400 transition hover:bg-cyan-500/15 hover:text-cyan-400"
                   >
                     <MessageCircle size={15} />
                   </a>
@@ -238,9 +256,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className="flex items-center gap-2 text-sm text-gray-500 transition hover:text-orange-400"
+                    className="flex items-center gap-2 text-sm text-gray-500 transition hover:text-purple-400"
                   >
-                    <span className="h-px w-3 bg-orange-500/40" />
+                    <span className="h-px w-3 bg-purple-500/40" />
                     {link.label}
                   </Link>
                 ))}
@@ -253,13 +271,13 @@ export function PublicShell({ children }: { children: ReactNode }) {
               </h4>
               <div className="mt-4 space-y-3.5">
                 {[
-                  { days: "Sat – Thu", hours: "10:00 AM – 11:00 PM" },
-                  { days: "Friday", hours: "2:00 PM – 11:00 PM" },
+                  { days: "Sat \u2013 Thu", hours: "10:00 AM \u2013 11:00 PM" },
+                  { days: "Friday", hours: "2:00 PM \u2013 11:00 PM" },
                 ].map(({ days, hours }) => (
                   <div key={days} className="flex items-start gap-3">
                     <Clock
                       size={13}
-                      className="mt-0.5 shrink-0 text-orange-500/70"
+                      className="mt-0.5 shrink-0 text-cyan-500/70"
                     />
                     <div>
                       <p className="text-xs font-semibold text-gray-300">
@@ -269,9 +287,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     </div>
                   </div>
                 ))}
-                <div className="mt-1 flex items-center gap-2 rounded-lg bg-green-500/10 px-3 py-2">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
-                  <span className="text-xs font-medium text-green-400">
+                <div className="mt-1 flex items-center gap-2 rounded-lg bg-cyan-500/10 px-3 py-2">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
+                  <span className="text-xs font-medium text-cyan-400">
                     Open Now
                   </span>
                 </div>
@@ -296,10 +314,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 {contact?.phone && (
                   <a
                     href={`tel:${contact.phone.replace(/[^0-9+]/g, "")}`}
-                    className="group flex items-center gap-3 text-sm text-gray-500 transition hover:text-orange-400"
+                    className="group flex items-center gap-3 text-sm text-gray-500 transition hover:text-purple-400"
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 transition group-hover:bg-orange-500/20">
-                      <Phone size={13} className="text-orange-500" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 transition group-hover:bg-purple-500/20">
+                      <Phone size={13} className="text-purple-500" />
                     </div>
                     {contact.phone}
                   </a>
@@ -320,18 +338,18 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 {contact?.email && (
                   <a
                     href={`mailto:${contact.email}`}
-                    className="group flex items-center gap-3 text-sm text-gray-500 transition hover:text-orange-400"
+                    className="group flex items-center gap-3 text-sm text-gray-500 transition hover:text-cyan-400"
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 transition group-hover:bg-orange-500/20">
-                      <Mail size={13} className="text-orange-500" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 transition group-hover:bg-cyan-500/20">
+                      <Mail size={13} className="text-cyan-500" />
                     </div>
                     <span className="truncate">{contact.email}</span>
                   </a>
                 )}
                 {contact?.address && (
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500/10">
-                      <MapPin size={13} className="text-orange-500" />
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10">
+                      <MapPin size={13} className="text-purple-500" />
                     </div>
                     <p className="text-sm leading-relaxed text-gray-500">
                       {contact.address}
@@ -345,18 +363,27 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
         <div className="border-t border-white/5">
           <div
-            className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent"
+            className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent"
             style={{ marginTop: "-1px" }}
           />
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-center sm:flex-row sm:text-left sm:px-6 lg:px-8">
             <p className="text-xs text-gray-600">
               {settings?.copyright ||
-                `© ${new Date().getFullYear()} ${settings?.siteName || "Gamers Den"}. All rights reserved.`}
+                `\u00A9 ${new Date().getFullYear()} ${settings?.siteName || "Gamers Den"}. All rights reserved.`}
             </p>
             <p className="text-xs text-gray-700">Gaming Zone Management</p>
           </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+export function PublicShell({ children }: { children: ReactNode }) {
+  return (
+    <SmoothScrollProvider>
+      <ScrollProgress />
+      <PublicShellInner>{children}</PublicShellInner>
+    </SmoothScrollProvider>
   );
 }

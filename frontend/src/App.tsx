@@ -1,7 +1,15 @@
+import { AnimatePresence } from "framer-motion";
 import { type ReactNode } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 
 import { Layout } from "./components/layout/Layout";
+import { PageTransition, ScrollProgress } from "./components/motion";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 import { SocketProvider } from "./context/SocketContext";
@@ -44,89 +52,123 @@ function ProtectedLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function AppRoutes() {
+function AnimatedRoutes() {
+  const location = useLocation();
   const { token } = useAuth();
+  const isPublicRoute = ["/", "/pricing", "/games", "/about"].includes(
+    location.pathname,
+  );
 
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/games" element={<GamesPage />} />
-      <Route path="/about" element={<AboutUsPage />} />
-      <Route
-        path="/login"
-        element={token ? <Navigate to="/dashboard" replace /> : <LoginPage />}
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedLayout>
-            <DashboardPage />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/devices"
-        element={
-          <ProtectedLayout>
-            <DevicesPage />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/members"
-        element={
-          <ProtectedLayout>
-            <MembersPage />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/sessions"
-        element={
-          <ProtectedLayout>
-            <SessionsPage />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/offers"
-        element={
-          <ProtectedLayout>
-            <OffersPage />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/reports"
-        element={
-          <ProtectedLayout>
-            <ReportsPage />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/staff"
-        element={
-          <ProtectedLayout>
-            <RequireAdmin>
-              <StaffPage />
-            </RequireAdmin>
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedLayout>
-            <RequireAdmin>
-              <SettingsPage />
-            </RequireAdmin>
-          </ProtectedLayout>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route
+          path="/"
+          element={
+            <PageTransition>
+              <HomePage />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/pricing"
+          element={
+            <PageTransition>
+              <PricingPage />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/games"
+          element={
+            <PageTransition>
+              <GamesPage />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <PageTransition>
+              <AboutUsPage />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/login"
+          element={token ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedLayout>
+              <DashboardPage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/devices"
+          element={
+            <ProtectedLayout>
+              <DevicesPage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/members"
+          element={
+            <ProtectedLayout>
+              <MembersPage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/sessions"
+          element={
+            <ProtectedLayout>
+              <SessionsPage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/offers"
+          element={
+            <ProtectedLayout>
+              <OffersPage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedLayout>
+              <ReportsPage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/staff"
+          element={
+            <ProtectedLayout>
+              <RequireAdmin>
+                <StaffPage />
+              </RequireAdmin>
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedLayout>
+              <RequireAdmin>
+                <SettingsPage />
+              </RequireAdmin>
+            </ProtectedLayout>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
   );
 }
 
@@ -136,7 +178,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <SiteSettingsProvider>
-            <AppRoutes />
+            <AnimatedRoutes />
           </SiteSettingsProvider>
         </AuthProvider>
       </ThemeProvider>

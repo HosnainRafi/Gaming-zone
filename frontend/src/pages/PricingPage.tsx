@@ -14,25 +14,17 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPricingTiers, type PricingTier } from "../api/pricing";
+const heroBg = "https://wallpapercat.com/w/middle-retina/5/d/f/2614-3840x2160-desktop-4k-cyberpunk-2077-wallpaper-photo.jpg";
+import {
+  BlurFade,
+  MagneticButton,
+  Reveal,
+  StaggerContainer,
+  StaggerItem,
+} from "../components/motion";
+import { SparklesText, SpotlightCard } from "../components/motion/effects";
 import { PublicShell } from "../components/public/PublicShell";
 import { useSiteSettings } from "../context/SiteSettingsContext";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
-  },
-};
-
-const stagger = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.1 },
-  },
-};
 
 export default function PricingPage() {
   const [tiers, setTiers] = useState<PricingTier[]>([]);
@@ -57,39 +49,45 @@ export default function PricingPage() {
   return (
     <PublicShell>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-[#070b10] py-20 lg:py-28">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 h-[400px] w-[400px] rounded-full bg-orange-500/5 blur-[120px]" />
+      <section className="relative overflow-hidden bg-[#0A0A0A] py-28 lg:py-36">
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <img src={heroBg} alt="" className="h-full w-full object-cover object-center" />
         </div>
+        {/* Dark overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/65 to-[#0A0A0A]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50" />
+        <div className="absolute inset-0 cyber-grid opacity-25 pointer-events-none" />
+        {/* Colour blobs */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 60% at 20% 50%, rgba(124,58,237,0.25) 0%, transparent 70%), radial-gradient(ellipse 40% 50% at 80% 30%, rgba(6,182,212,0.2) 0%, transparent 60%)" }} />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] as const }}
-            className="text-center"
-          >
-            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-500">
-              <Zap size={14} />
-              Tiered Access
-            </span>
-            <h1 className="mt-3 font-display text-4xl font-black uppercase text-white sm:text-5xl lg:text-6xl">
-              Choose Your{" "}
-              <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-                Station
+          <div className="text-center">
+            <BlurFade delay={0.1}>
+              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-purple-400">
+                <Zap size={14} />
+                Tiered Access
               </span>
-            </h1>
-            <p className="mx-auto mt-4 max-w-lg text-base text-gray-400">
-              Premium hardware for every level of play. Select the setup that
-              suits your session.
-            </p>
-          </motion.div>
+            </BlurFade>
+            <BlurFade delay={0.2}>
+              <h1 className="mt-3 font-display text-4xl font-black uppercase text-white sm:text-5xl lg:text-6xl">
+                Choose Your{" "}
+                <SparklesText sparkleCount={6} colors={["#7c3aed", "#06b6d4", "#ec4899", "#ffffff"]} className="bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-400 bg-clip-text text-transparent">
+                  Station
+                </SparklesText>
+              </h1>
+            </BlurFade>
+            <BlurFade delay={0.3}>
+              <p className="mx-auto mt-4 max-w-lg text-base text-gray-400">
+                Premium hardware for every level of play. Select the setup that
+                suits your session.
+              </p>
+            </BlurFade>
+          </div>
 
           {/* Info badges */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+          <BlurFade
+            delay={0.4}
             className="mt-10 flex flex-wrap items-center justify-center gap-3"
           >
             {[
@@ -103,26 +101,26 @@ export default function PricingPage() {
             ].map(({ icon, label }) => (
               <div
                 key={label}
-                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-gray-400"
+                className="flex items-center gap-2 rounded-full border border-purple-500/15 bg-purple-500/5 px-4 py-2 text-xs font-medium text-gray-400"
               >
-                <span className="text-orange-500">{icon}</span>
+                <span className="text-purple-400">{icon}</span>
                 {label}
               </div>
             ))}
-          </motion.div>
+          </BlurFade>
         </div>
       </section>
 
-      {/* Pricing Cards */}
-      <section className="relative bg-[#0a0e14] py-16 lg:py-24 overflow-hidden">
+      {/* Pricing Cards - Dark Gradient Style */}
+      <section className="relative bg-[#080810] py-16 lg:py-24 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-orange-500/3 blur-[130px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-purple-500/5 blur-[130px]" />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <div className="h-10 w-10 animate-spin rounded-full border-3 border-orange-500/30 border-t-orange-500" />
+              <div className="h-10 w-10 animate-spin rounded-full border-3 border-purple-500/30 border-t-purple-500" />
             </div>
           ) : tiers.length === 0 ? (
             <div className="py-20 text-center">
@@ -131,207 +129,220 @@ export default function PricingPage() {
               </p>
             </div>
           ) : (
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={stagger}
+            <StaggerContainer
               className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              staggerDelay={0.1}
             >
               {tiers.map((tier, idx) => (
-                <motion.article
-                  key={tier.id}
-                  variants={fadeUp}
-                  whileHover={{ y: -8 }}
-                  className={`relative flex flex-col overflow-hidden rounded-2xl border p-7 transition-all ${
-                    tier.isPopular
-                      ? "border-orange-500/40 bg-gradient-to-b from-orange-500/8 to-[#0d1117] shadow-2xl shadow-orange-500/10"
-                      : "border-white/8 bg-[#0d1117] hover:border-white/15"
-                  }`}
-                >
-                  {tier.isPopular && (
-                    <div className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-                      Most Popular
-                    </div>
-                  )}
-
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    {tier.isPopular
-                      ? "Competitor Choice"
-                      : idx === tiers.length - 1
-                        ? "Luxury Suite"
-                        : "Core Experience"}
-                  </p>
-
-                  <h3 className="mt-1 text-xl font-bold text-white">
-                    {tier.name}
-                  </h3>
-
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-white">
-                      &#2547;{Number(tier.price).toFixed(0)}
-                    </span>
-                    <span className="text-sm font-medium uppercase text-gray-500">
-                      / {tier.perUnit}
-                    </span>
-                  </div>
-
-                  <ul className="mt-6 flex-grow space-y-3">
-                    {tier.description.map((point, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-3 text-sm text-gray-300"
-                      >
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-500/15">
-                          <Check size={11} className="text-orange-400" />
-                        </span>
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div
-                    className={`mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all cursor-default ${
+                <StaggerItem key={tier.id}>
+                  <motion.article
+                    whileHover={{
+                      y: -8,
+                      transition: {
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 20,
+                      },
+                    }}
+                    className={`relative flex flex-col overflow-hidden rounded-2xl border p-7 transition-all ${
                       tier.isPopular
-                        ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20"
-                        : "border border-white/10 bg-white/5 text-white"
+                        ? "border-purple-500/40 bg-gradient-to-b from-purple-500/10 to-[#0d0d15] shadow-2xl shadow-purple-500/10"
+                        : "border-white/8 bg-[#0d0d15] hover:border-purple-500/20"
                     }`}
                   >
-                    Walk-In Only
-                  </div>
-                </motion.article>
+                    {/* Neon glow top border for popular */}
+                    {tier.isPopular && (
+                      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 via-cyan-400 to-pink-500" />
+                    )}
+
+                    {tier.isPopular && (
+                      <div className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                        Most Popular
+                      </div>
+                    )}
+
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      {tier.isPopular
+                        ? "Competitor Choice"
+                        : idx === tiers.length - 1
+                          ? "Luxury Suite"
+                          : "Core Experience"}
+                    </p>
+
+                    <h3 className="mt-1 text-xl font-bold text-white">
+                      {tier.name}
+                    </h3>
+
+                    <div className="mt-4 flex items-baseline gap-1">
+                      <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">
+                        &#2547;{Number(tier.price).toFixed(0)}
+                      </span>
+                      <span className="text-sm font-medium uppercase text-gray-500">
+                        / {tier.perUnit}
+                      </span>
+                    </div>
+
+                    <ul className="mt-6 flex-grow space-y-3">
+                      {tier.description.map((point, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start gap-3 text-sm text-gray-300"
+                        >
+                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-500/15">
+                            <Check size={11} className="text-purple-400" />
+                          </span>
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div
+                      className={`mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all cursor-default ${
+                        tier.isPopular
+                          ? "bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-lg shadow-purple-500/20"
+                          : "border border-white/10 bg-white/5 text-white"
+                      }`}
+                    >
+                      Walk-In Only
+                    </div>
+                  </motion.article>
+                </StaggerItem>
               ))}
-            </motion.div>
+            </StaggerContainer>
           )}
         </div>
       </section>
 
-      {/* What's Included */}
-      <section className="relative bg-[#070b10] py-20 lg:py-28 overflow-hidden">
+      {/* What is Included */}
+      <section className="relative bg-[#0A0A0A] py-20 lg:py-28 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-1/4 h-[300px] w-[300px] rounded-full bg-purple-500/3 blur-[100px]" />
+          <div className="absolute top-0 right-1/4 h-[300px] w-[300px] rounded-full bg-pink-500/5 blur-[100px]" />
         </div>
 
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-500">
+          <Reveal className="text-center">
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-cyan-400">
               <Sparkles size={14} />
               Every Session Includes
             </span>
             <h2 className="mt-3 font-display text-3xl font-bold text-white">
               What You Get
             </h2>
-          </motion.div>
+          </Reveal>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
+          <StaggerContainer
             className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            staggerDelay={0.08}
           >
             {[
               {
                 icon: <Monitor size={20} />,
                 title: "High-End Hardware",
                 desc: "Latest RTX GPUs, high-refresh monitors, mechanical keyboards.",
+                color: "purple",
               },
               {
                 icon: <Gamepad2 size={20} />,
                 title: "Controllers & Peripherals",
                 desc: "DualSense, DualShock, and steering wheels - all included.",
+                color: "cyan",
               },
               {
                 icon: <Headphones size={20} />,
                 title: "Audio Setup",
                 desc: "Gaming headsets and surround sound at every station.",
+                color: "pink",
               },
               {
                 icon: <Sparkles size={20} />,
                 title: "Ambient Lighting",
                 desc: "RGB-lit gaming area with a premium atmosphere.",
+                color: "purple",
               },
               {
                 icon: <Zap size={20} />,
                 title: "Refreshments Nearby",
                 desc: "Snacks and cold drinks available on-site.",
+                color: "cyan",
               },
               {
                 icon: <Shield size={20} />,
                 title: "Sanitized Equipment",
                 desc: "Peripherals cleaned before every session - always fresh.",
+                color: "pink",
               },
-            ].map(({ icon, title, desc }) => (
-              <motion.div
-                key={title}
-                variants={fadeUp}
-                whileHover={{ y: -4 }}
-                className="group rounded-2xl border border-white/5 bg-[#0d1117] p-6 transition-all hover:border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/5"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500 transition-colors group-hover:bg-orange-500/20">
-                  {icon}
-                </div>
-                <h3 className="mt-4 font-semibold text-white">{title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-gray-400">
-                  {desc}
-                </p>
-              </motion.div>
+            ].map(({ icon, title, desc, color }) => (
+              <StaggerItem key={title}>
+                <SpotlightCard className="p-6 group">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                    color === "purple" ? "bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20" :
+                    color === "cyan" ? "bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20" :
+                    "bg-pink-500/10 text-pink-400 group-hover:bg-pink-500/20"
+                  }`}>
+                    {icon}
+                  </div>
+                  <h3 className="mt-4 font-semibold text-white">{title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-gray-400">
+                    {desc}
+                  </p>
+                </SpotlightCard>
+              </StaggerItem>
             ))}
-          </motion.div>
+          </StaggerContainer>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="bg-[#0a0e14] py-16">
+      <section className="bg-[#080810] py-16">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 p-10 text-center shadow-2xl shadow-orange-500/20 lg:p-14"
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.1)_0%,transparent_60%)]" />
-            <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full border border-white/10" />
+          <Reveal>
+            <motion.div
+              whileHover={{
+                scale: 1.01,
+                transition: { type: "spring", stiffness: 200, damping: 20 },
+              }}
+              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 via-purple-700 to-cyan-600 p-10 text-center shadow-2xl shadow-purple-500/20 lg:p-14"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.1)_0%,transparent_60%)]" />
+              <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full border border-white/10" />
 
-            <div className="relative">
-              <h2 className="font-display text-2xl font-bold text-white sm:text-3xl">
-                Ready to Level Up?
-              </h2>
-              <p className="mx-auto mt-3 max-w-md text-sm text-orange-100/90">
-                Join the ranks of elite gamers. Walk in anytime - no
-                appointments needed. Prepaid sessions from 30 minutes.
-              </p>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-                <Link
-                  to="/games"
-                  className="group inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-orange-600 shadow-lg transition-all hover:bg-orange-50 hover:scale-[1.02] active:scale-95"
-                >
-                  Browse Games
-                  <ArrowRight
-                    size={15}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                </Link>
-                {contact?.whatsapp && (
-                  <a
-                    href={`https://wa.me/${contact.whatsapp.replace(/[^0-9]/g, "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border-2 border-white/30 px-7 py-3.5 text-sm font-bold text-white transition-all hover:bg-white/10 hover:border-white/50"
-                  >
-                    Contact Us
-                  </a>
-                )}
+              <div className="relative">
+                <h2 className="font-display text-2xl font-bold text-white sm:text-3xl">
+                  Ready to Level Up?
+                </h2>
+                <p className="mx-auto mt-3 max-w-md text-sm text-purple-100/90">
+                  Join the ranks of elite gamers. Walk in anytime - no
+                  appointments needed. Prepaid sessions from 30 minutes.
+                </p>
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                  <MagneticButton strength={0.12}>
+                    <Link
+                      to="/games"
+                      className="group inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-purple-700 shadow-lg transition-all hover:bg-purple-50 hover:scale-[1.02] active:scale-95"
+                    >
+                      Browse Games
+                      <ArrowRight
+                        size={15}
+                        className="transition-transform group-hover:translate-x-1"
+                      />
+                    </Link>
+                  </MagneticButton>
+                  {contact?.whatsapp && (
+                    <MagneticButton strength={0.12}>
+                      <a
+                        href={`https://wa.me/${contact.whatsapp.replace(/[^0-9]/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl border-2 border-white/30 px-7 py-3.5 text-sm font-bold text-white transition-all hover:bg-white/10 hover:border-white/50"
+                      >
+                        Contact Us
+                      </a>
+                    </MagneticButton>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </Reveal>
         </div>
       </section>
     </PublicShell>

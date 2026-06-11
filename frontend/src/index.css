@@ -1,13 +1,32 @@
 @import "tailwindcss";
 
+/* ── Lenis smooth scroll ── */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
 @theme {
-  --color-gz-bg: #080810;
+  --color-gz-bg: #0a0a0a;
   --color-gz-surface: #0f0f1a;
   --color-gz-card: #13131f;
   --color-gz-border: #1e1e30;
   --color-gz-purple: #7c3aed;
   --color-gz-purple-light: #a855f7;
   --color-gz-cyan: #06b6d4;
+  --color-gz-pink: #ec4899;
   --color-gz-green: #22c55e;
   --color-gz-red: #ef4444;
   --color-gz-yellow: #eab308;
@@ -16,7 +35,7 @@
 }
 
 body {
-  background-color: var(--color-gz-bg);
+  background-color: #0a0a0a;
   color: #e2e8f0;
   font-family: var(--font-body);
 }
@@ -61,6 +80,39 @@ body {
   100% {
     background-position: 200% 0;
   }
+}
+
+@keyframes aurora {
+  0%,
+  100% {
+    background-position: 0% 50%;
+    transform: rotate(-5deg) scale(1.5);
+  }
+  25% {
+    background-position: 50% 100%;
+  }
+  50% {
+    background-position: 100% 50%;
+    transform: rotate(5deg) scale(1.8);
+  }
+  75% {
+    background-position: 50% 0%;
+  }
+}
+
+@keyframes spin {
+  from {
+    --border-angle: 0deg;
+  }
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
 }
 
 @keyframes border-rotate {
@@ -119,10 +171,43 @@ body {
     0 0 40px rgba(249, 115, 22, 0.05);
 }
 
+.neon-purple {
+  box-shadow:
+    0 0 10px rgba(124, 58, 237, 0.4),
+    0 0 20px rgba(124, 58, 237, 0.2),
+    0 0 40px rgba(124, 58, 237, 0.1);
+}
+
+.neon-cyan {
+  box-shadow:
+    0 0 10px rgba(6, 182, 212, 0.4),
+    0 0 20px rgba(6, 182, 212, 0.2),
+    0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+.neon-pink {
+  box-shadow:
+    0 0 10px rgba(236, 72, 153, 0.4),
+    0 0 20px rgba(236, 72, 153, 0.2),
+    0 0 40px rgba(236, 72, 153, 0.1);
+}
+
 .neon-text-orange {
   text-shadow:
     0 0 10px rgba(249, 115, 22, 0.5),
     0 0 20px rgba(249, 115, 22, 0.3);
+}
+
+.neon-text-purple {
+  text-shadow:
+    0 0 10px rgba(124, 58, 237, 0.5),
+    0 0 20px rgba(124, 58, 237, 0.3);
+}
+
+.neon-text-cyan {
+  text-shadow:
+    0 0 10px rgba(6, 182, 212, 0.5),
+    0 0 20px rgba(6, 182, 212, 0.3);
 }
 
 /* ── Smooth page transitions ── */
@@ -166,15 +251,117 @@ body {
   background-clip: text;
 }
 
-/* ── Smooth scroll behavior ── */
-html {
+.text-gradient-cyber {
+  background: linear-gradient(135deg, #7c3aed, #06b6d4, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-neon {
+  background: linear-gradient(135deg, #06b6d4, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Smooth scroll behavior (handled by Lenis, fallback for non-JS) ── */
+html:not(.lenis) {
   scroll-behavior: smooth;
+}
+
+/* ── Motion reduce (accessibility) ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── Selection styling ── */
 ::selection {
-  background: rgba(249, 115, 22, 0.3);
+  background: rgba(124, 58, 237, 0.4);
   color: #fff;
+}
+
+/* ── Cyber grid background pattern ── */
+.cyber-grid {
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.cyber-grid-sm {
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.04) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+/* ── Dot grid pattern ── */
+.dot-grid {
+  background-image: radial-gradient(
+    rgba(124, 58, 237, 0.25) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
+}
+
+/* ── Scanline effect ── */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+  pointer-events: none;
+}
+
+/* ── Section glow divider ── */
+.glow-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(124, 58, 237, 0.5) 30%,
+    rgba(6, 182, 212, 0.5) 70%,
+    transparent
+  );
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+}
+
+/* ── Animated scan line ── */
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.animate-scan {
+  animation: scan 8s linear infinite;
+}
+
+/* ── Noise texture overlay ── */
+.noise-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
 }
 
 /* ── Light mode overrides ── */

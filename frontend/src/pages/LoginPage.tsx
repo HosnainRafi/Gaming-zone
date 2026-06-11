@@ -38,7 +38,7 @@ export default function LoginPage() {
         <motion.div
           animate={{ scale: [1, 1.1, 1], x: [0, 30, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-0 -left-20 h-[400px] w-[400px] rounded-full bg-orange-500/8 blur-[120px]"
+          className="absolute bottom-0 -left-20 h-[400px] w-[400px] rounded-full bg-purple-500/8 blur-[120px]"
         />
         <motion.div
           animate={{ scale: [1, 1.15, 1], y: [0, -20, 0] }}
