@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
   Gamepad2,
@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useInView } from "react-intersection-observer";
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   BlurFade,
@@ -28,30 +29,52 @@ import {
   SparklesText,
   SpotlightCard,
 } from "../components/motion/effects";
+import { SceneCanvas, AboutConstellation } from "../components/three";
+import { useThreeScene } from "../hooks/useThreeScene";
+import { AnimeAreaEnter, AnimeCameraReveal, AnimeHeroExit } from "../components/anime";
+import { GsapScrambleText, GsapTextSplit } from "../components/gsap";
+import { NowPlayingBar } from "../components/public/NowPlayingBar";
 import { PublicShell } from "../components/public/PublicShell";
 import { useSiteSettings } from "../context/SiteSettingsContext";
-const heroBg =
-  "https://wallpapercat.com/w/middle-retina/b/3/d/12312-3840x2160-desktop-4k-elden-ring-background-photo.jpg";
+import img2 from "../images/2.jpg";
+import img3 from "../images/3.jpg";
 
 export default function AboutUsPage() {
   const { settings } = useSiteSettings();
   const contact = settings?.contact;
 
+  const { shouldRender: render3d } = useThreeScene();
   const [statsRef, statsInView] = useInView({
     triggerOnce: true,
     threshold: 0.3,
   });
 
+  // Hero background parallax (3D depth on scroll)
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroScroll } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroBgY = useTransform(heroScroll, [0, 1], [0, 90]);
+
   return (
     <PublicShell>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#0A0A0A] py-28 lg:py-36">
+      <section ref={heroRef} className="relative overflow-hidden bg-[#0A0A0A] py-28 lg:py-36">
+        {/* 3D Constellation Background */}
+        {render3d && (
+          <SceneCanvas aria-label="3D constellation network scene" className="z-10" bloomIntensity={0.7} bloomThreshold={0.6}>
+            <AboutConstellation />
+            <ambientLight intensity={0.04} />
+          </SceneCanvas>
+        )}
         {/* Background image */}
         <div className="absolute inset-0">
-          <img
-            src={heroBg}
+          <motion.img
+            style={{ y: heroBgY }}
+            src={img2}
             alt=""
-            className="h-full w-full object-cover object-center"
+            className="h-full w-full scale-110 object-cover object-center"
           />
         </div>
         {/* Dark overlays */}
@@ -68,7 +91,7 @@ export default function AboutUsPage() {
         />
         <FloatingParticles count={15} className="opacity-40" />
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <AnimeHeroExit className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <BlurFade delay={0.1}>
               <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-purple-400">
@@ -88,16 +111,17 @@ export default function AboutUsPage() {
                 </SparklesText>
               </h1>
             </BlurFade>
-            <BlurFade delay={0.3}>
-              <p className="mx-auto mt-4 max-w-xl text-base text-gray-400 leading-relaxed">
-                Founded by competitive gamers for gamers. We believe every
-                player deserves access to world-class equipment without
-                compromise.
-              </p>
-            </BlurFade>
+            <GsapTextSplit
+              className="mx-auto mt-4 max-w-xl"
+              innerClassName="text-base text-gray-400 leading-relaxed"
+            >
+              Founded by competitive gamers for gamers. We believe every player deserves access to world-class equipment without compromise.
+            </GsapTextSplit>
           </div>
-        </div>
+        </AnimeHeroExit>
       </section>
+
+      <NowPlayingBar />
 
       {/* Elite Philosophy */}
       <section className="relative bg-[#080810] py-20 lg:py-28 overflow-hidden">
@@ -109,13 +133,13 @@ export default function AboutUsPage() {
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             <Reveal direction="left" distance={40}>
-              <div className="relative">
+              <div className="relative [perspective:1000px]">
                 <div className="relative overflow-hidden rounded-2xl border border-purple-500/10">
                   <motion.img
-                    src="	https://wallpapercave.com/dwp2x/Mw7KlNN.jpg"
+                    src={img3}
                     alt="Elite Gaming Setup"
                     className="w-full aspect-[4/3] object-cover"
-                    whileHover={{ scale: 1.04 }}
+                    whileHover={{ scale: 1.04, rotateY: -3, rotateX: 2 }}
                     transition={{ type: "spring", stiffness: 200, damping: 20 }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/15 to-transparent" />
@@ -221,7 +245,7 @@ export default function AboutUsPage() {
       <section ref={statsRef} className="bg-[#0A0A0A] py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <StaggerContainer
-            className="grid grid-cols-2 gap-4 md:grid-cols-4"
+            className="grid grid-cols-2 gap-4 md:grid-cols-4 [perspective:1000px]"
             staggerDelay={0.1}
           >
             {[
@@ -234,9 +258,11 @@ export default function AboutUsPage() {
                 <motion.div
                   whileHover={{
                     scale: 1.05,
+                    rotateX: 3,
+                    rotateY: -3,
                     transition: { type: "spring", stiffness: 300, damping: 15 },
                   }}
-                  className="rounded-2xl border border-purple-500/10 bg-[#0d0d15] p-6 text-center"
+                  className="rounded-2xl border border-purple-500/10 bg-[#0d0d15] p-6 text-center [transform-style:preserve-3d]"
                 >
                   <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 sm:text-4xl">
                     {statsInView ? (
@@ -267,9 +293,14 @@ export default function AboutUsPage() {
               <Shield size={14} />
               What We Offer
             </span>
-            <h2 className="mt-3 font-display text-3xl font-bold text-white">
+            <GsapScrambleText
+              tag="h2"
+              className="mt-3 font-display text-3xl font-bold text-white"
+              scrambleDuration={1.3}
+              stagger={0.04}
+            >
               The Elite Experience
-            </h2>
+            </GsapScrambleText>
             <p className="mt-3 text-gray-400 max-w-lg mx-auto">
               Everything you need for the ultimate gaming session, all under one
               roof.
@@ -279,7 +310,7 @@ export default function AboutUsPage() {
           <LineDraw className="mt-8 mb-12" />
 
           <StaggerContainer
-            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 [perspective:1000px]"
             staggerDelay={0.08}
           >
             {[
@@ -383,7 +414,7 @@ export default function AboutUsPage() {
                 )}
               </div>
 
-              <div className="space-y-4">
+              <AnimeAreaEnter direction="up" className="space-y-4" staggerMs={70}>
                 <div className="rounded-2xl border border-purple-500/10 bg-[#0d0d15] p-6">
                   <h3 className="font-semibold text-white flex items-center gap-2">
                     <MapPin size={16} className="text-purple-500" />
@@ -432,7 +463,7 @@ export default function AboutUsPage() {
                     )}
                   </div>
                 )}
-              </div>
+              </AnimeAreaEnter>
             </div>
           </BlurFade>
         </div>
@@ -440,7 +471,7 @@ export default function AboutUsPage() {
 
       {/* CTA */}
       <section className="bg-[#080810] py-16">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+        <AnimeCameraReveal range={44} zoomFrom={0.95} className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <Reveal>
             <motion.div
               whileHover={{
@@ -485,7 +516,7 @@ export default function AboutUsPage() {
               </div>
             </motion.div>
           </Reveal>
-        </div>
+        </AnimeCameraReveal>
       </section>
     </PublicShell>
   );

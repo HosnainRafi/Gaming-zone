@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
   Check,
@@ -11,10 +11,11 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPricingTiers, type PricingTier } from "../api/pricing";
-const heroBg = "https://wallpapercat.com/w/middle-retina/5/d/f/2614-3840x2160-desktop-4k-cyberpunk-2077-wallpaper-photo.jpg";
+import img4 from "../images/4.jpg";
+import { publicPricing } from "../data/publicSite";
 import {
   BlurFade,
   MagneticButton,
@@ -23,14 +24,44 @@ import {
   StaggerItem,
 } from "../components/motion";
 import { SparklesText, SpotlightCard } from "../components/motion/effects";
+import { SceneCanvas, PricingTorus } from "../components/three";
+import { useThreeScene } from "../hooks/useThreeScene";
+import { AnimeCameraReveal, AnimeHeroExit, AnimeMouseCamera } from "../components/anime";
+import { GsapScrambleText, GsapTextSplit } from "../components/gsap";
+import { NowPlayingBar } from "../components/public/NowPlayingBar";
 import { PublicShell } from "../components/public/PublicShell";
 import { useSiteSettings } from "../context/SiteSettingsContext";
+
+const fallbackTiers: PricingTier[] = publicPricing.map((p, i) => ({
+  id: `fb-tier-${i}`,
+  name: p.name,
+  price: p.price.replace(/[^\d]/g, ""),
+  perUnit: p.perUnit,
+  description: p.points,
+  isPopular: p.highlight,
+  isActive: true,
+  sortOrder: i,
+  createdAt: "",
+  updatedAt: "",
+}));
 
 export default function PricingPage() {
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { settings } = useSiteSettings();
+  const { shouldRender: render3d } = useThreeScene();
   const contact = settings?.contact;
+  const whatsappHref = contact?.whatsapp
+    ? `https://wa.me/${contact.whatsapp.replace(/[^0-9]/g, "")}`
+    : null;
+
+  // Hero background parallax (3D depth on scroll)
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroScroll } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroBgY = useTransform(heroScroll, [0, 1], [0, 90]);
 
   useEffect(() => {
     async function fetchPricing() {
@@ -49,10 +80,22 @@ export default function PricingPage() {
   return (
     <PublicShell>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-[#0A0A0A] py-28 lg:py-36">
+      <section ref={heroRef} className="relative overflow-hidden bg-[#0A0A0A] py-28 lg:py-36">
+        {/* 3D Torus Rings Background */}
+        {render3d && (
+          <SceneCanvas aria-label="3D rotating torus rings scene" className="z-10" bloomIntensity={0.75} bloomThreshold={0.58}>
+            <PricingTorus />
+            <ambientLight intensity={0.03} />
+          </SceneCanvas>
+        )}
         {/* Background image */}
         <div className="absolute inset-0">
-          <img src={heroBg} alt="" className="h-full w-full object-cover object-center" />
+          <motion.img
+            style={{ y: heroBgY }}
+            src={img4}
+            alt=""
+            className="h-full w-full scale-110 object-cover object-center"
+          />
         </div>
         {/* Dark overlays */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/65 to-[#0A0A0A]" />
@@ -61,7 +104,7 @@ export default function PricingPage() {
         {/* Colour blobs */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 60% at 20% 50%, rgba(124,58,237,0.25) 0%, transparent 70%), radial-gradient(ellipse 40% 50% at 80% 30%, rgba(6,182,212,0.2) 0%, transparent 60%)" }} />
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <AnimeHeroExit className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <BlurFade delay={0.1}>
               <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-purple-400">
@@ -77,12 +120,12 @@ export default function PricingPage() {
                 </SparklesText>
               </h1>
             </BlurFade>
-            <BlurFade delay={0.3}>
-              <p className="mx-auto mt-4 max-w-lg text-base text-gray-400">
-                Premium hardware for every level of play. Select the setup that
-                suits your session.
-              </p>
-            </BlurFade>
+            <GsapTextSplit
+              className="mx-auto mt-4 max-w-lg"
+              innerClassName="text-base text-gray-400"
+            >
+              Premium hardware for every level of play. Select the setup that suits your session.
+            </GsapTextSplit>
           </div>
 
           {/* Info badges */}
@@ -108,8 +151,10 @@ export default function PricingPage() {
               </div>
             ))}
           </BlurFade>
-        </div>
+        </AnimeHeroExit>
       </section>
+
+      <NowPlayingBar />
 
       {/* Pricing Cards - Dark Gradient Style */}
       <section className="relative bg-[#080810] py-16 lg:py-24 overflow-hidden">
@@ -129,8 +174,9 @@ export default function PricingPage() {
               </p>
             </div>
           ) : (
+            <AnimeMouseCamera maxRotate={3.5} maxTranslate={9}>
             <StaggerContainer
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 [perspective:1200px]"
               staggerDelay={0.1}
             >
               {tiers.map((tier, idx) => (
@@ -138,13 +184,16 @@ export default function PricingPage() {
                   <motion.article
                     whileHover={{
                       y: -8,
+                      rotateX: 3,
+                      rotateY: -2,
+                      scale: 1.02,
                       transition: {
                         type: "spring",
                         stiffness: 300,
                         damping: 20,
                       },
                     }}
-                    className={`relative flex flex-col overflow-hidden rounded-2xl border p-7 transition-all ${
+                    className={`relative flex flex-col overflow-hidden rounded-2xl border p-7 transition-all [transform-style:preserve-3d] ${
                       tier.isPopular
                         ? "border-purple-500/40 bg-gradient-to-b from-purple-500/10 to-[#0d0d15] shadow-2xl shadow-purple-500/10"
                         : "border-white/8 bg-[#0d0d15] hover:border-purple-500/20"
@@ -196,19 +245,23 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    <div
-                      className={`mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all cursor-default ${
-                        tier.isPopular
-                          ? "bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-lg shadow-purple-500/20"
-                          : "border border-white/10 bg-white/5 text-white"
-                      }`}
-                    >
-                      Walk-In Only
-                    </div>
+                    <MagneticButton strength={0.08} className="mt-7">
+                      <a
+                        href={whatsappHref || "/about"}
+                        {...(whatsappHref ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                        className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 ${tier.isPopular
+                          ? "bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-lg shadow-purple-500/20 hover:brightness-110"
+                          : "border border-white/10 bg-white/5 text-white hover:border-purple-500/40 hover:bg-purple-500/10"
+                        }`}
+                      >
+                        {whatsappHref ? "Book on WhatsApp" : "Walk-In Only"}
+                      </a>
+                    </MagneticButton>
                   </motion.article>
                 </StaggerItem>
               ))}
             </StaggerContainer>
+            </AnimeMouseCamera>
           )}
         </div>
       </section>
@@ -225,13 +278,19 @@ export default function PricingPage() {
               <Sparkles size={14} />
               Every Session Includes
             </span>
-            <h2 className="mt-3 font-display text-3xl font-bold text-white">
+            <GsapScrambleText
+              tag="h2"
+              className="mt-3 font-display text-3xl font-bold text-white"
+              scrambleDuration={1.3}
+              stagger={0.04}
+            >
               What You Get
-            </h2>
+            </GsapScrambleText>
           </Reveal>
 
+          <AnimeMouseCamera maxRotate={3} maxTranslate={8} className="mt-12">
           <StaggerContainer
-            className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 [perspective:1000px]"
             staggerDelay={0.08}
           >
             {[
@@ -289,12 +348,13 @@ export default function PricingPage() {
               </StaggerItem>
             ))}
           </StaggerContainer>
+          </AnimeMouseCamera>
         </div>
       </section>
 
       {/* CTA */}
       <section className="bg-[#080810] py-16">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+        <AnimeCameraReveal range={44} zoomFrom={0.95} className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <Reveal>
             <motion.div
               whileHover={{
@@ -343,7 +403,7 @@ export default function PricingPage() {
               </div>
             </motion.div>
           </Reveal>
-        </div>
+        </AnimeCameraReveal>
       </section>
     </PublicShell>
   );

@@ -549,10 +549,29 @@ export function CursorGlow({
 export function PageTransition({ children }: { children: ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      initial={{
+        opacity: 0,
+        y: 16,
+        rotateX: 6,
+        transformPerspective: 1000,
+        filter: "blur(4px)",
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        rotateX: 0,
+        transformPerspective: 1000,
+        filter: "blur(0px)",
+      }}
+      exit={{
+        opacity: 0,
+        y: -12,
+        rotateX: -4,
+        transformPerspective: 1000,
+        filter: "blur(4px)",
+      }}
+      transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+      style={{ transformOrigin: "50% 0%" }}
     >
       {children}
     </motion.div>

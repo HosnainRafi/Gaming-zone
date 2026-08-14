@@ -70,7 +70,7 @@ export function Sidebar({
   return (
     <aside
       className={clsx(
-        "fixed inset-y-0 left-0 z-40 flex h-full w-72 shrink-0 flex-col border-r border-gz-border bg-gz-surface transition-transform duration-200 md:static md:z-auto md:w-60 md:translate-x-0 md:shadow-none",
+        "fixed inset-y-0 left-0 z-40 flex h-full w-72 shrink-0 flex-col border-r border-gz-border bg-gz-surface/85 backdrop-blur-xl transition-transform duration-200 md:static md:z-auto md:w-60 md:translate-x-0 md:shadow-none",
         mobileExpanded
           ? "translate-x-0 shadow-2xl shadow-black/40"
           : "-translate-x-full pointer-events-none",
@@ -79,7 +79,7 @@ export function Sidebar({
     >
       <div className="flex items-center justify-between border-b border-gz-border px-4 py-5 md:px-5">
         <div className={clsx("flex items-center gap-3", justifyClass)}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600 shadow-lg shadow-violet-900/50">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500 shadow-lg shadow-violet-900/40">
             <Gamepad2 size={20} className="text-white" />
           </div>
           <div className={labelClass}>
@@ -122,7 +122,7 @@ export function Sidebar({
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150",
                 justifyClass,
                 isActive
-                  ? "bg-violet-600/20 text-violet-300 font-medium shadow-[inset_0_0_0_1px_rgba(124,58,237,0.2)]"
+                  ? "bg-gradient-to-r from-violet-600/25 via-violet-600/10 to-transparent text-violet-300 font-medium shadow-[inset_0_0_0_1px_rgba(124,58,237,0.3)]"
                   : "text-slate-400 hover:bg-white/5 hover:text-slate-200",
               )
             }
@@ -153,7 +153,7 @@ export function Sidebar({
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150",
                     justifyClass,
                     isActive
-                      ? "bg-violet-600/20 text-violet-300 font-medium shadow-[inset_0_0_0_1px_rgba(124,58,237,0.2)]"
+                      ? "bg-gradient-to-r from-violet-600/25 via-violet-600/10 to-transparent text-violet-300 font-medium shadow-[inset_0_0_0_1px_rgba(124,58,237,0.3)]"
                       : "text-slate-400 hover:bg-white/5 hover:text-slate-200",
                   )
                 }

@@ -1,11 +1,30 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { Gamepad2, Search, X, Zap } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getGamePlatforms, getGames, type Game } from "../api/games";
-const heroBg = "https://wallpapercat.com/w/middle-retina/2/0/8/1143-3840x2160-desktop-4k-fortnite-background-photo.jpg";
+import img3 from "../images/3.jpg";
+import { publicGames } from "../data/publicSite";
+import { SceneCanvas, GamesGridScene } from "../components/three";
+import { useThreeScene } from "../hooks/useThreeScene";
 import { BlurFade } from "../components/motion";
 import { FloatingParticles, SparklesText } from "../components/motion/effects";
+import { FeaturedGallery } from "../components/public/FeaturedGallery";
+import { AnimeCameraReveal, AnimeHeroExit, AnimeMouseCamera, AnimeTextShimmer } from "../components/anime";
+import { GsapScrambleText, GsapTextSplit } from "../components/gsap";
+import { NowPlayingBar } from "../components/public/NowPlayingBar";
 import { PublicShell } from "../components/public/PublicShell";
+
+const fallbackGames: Game[] = publicGames.map((g, i) => ({
+  id: `fb-${i}`,
+  title: g.title,
+  platform: g.platform,
+  genre: g.genre,
+  imageUrl: null,
+  isActive: true,
+  sortOrder: i,
+  createdAt: "",
+  updatedAt: "",
+}));
 
 const platformColors: Record<string, { bg: string; text: string; border: string }> = {
   PC: { bg: "bg-cyan-500/15", text: "text-cyan-300", border: "border-cyan-500/30" },
@@ -20,6 +39,15 @@ export default function GamesPage() {
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const { shouldRender: render3d } = useThreeScene();
+
+  // Hero background parallax (3D depth on scroll)
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroScroll } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroBgY = useTransform(heroScroll, [0, 1], [0, 90]);
 
   useEffect(() => {
     async function fetchData() {
@@ -29,6 +57,12 @@ export default function GamesPage() {
         setPlatforms(["ALL", ...platformsData]);
       } catch (err) {
         console.error("Failed to fetch games:", err);
+        // Offline / API failure → serve the curated static library
+        const platforms = Array.from(
+          new Set(fallbackGames.map((g) => g.platform)),
+        );
+        setGames(fallbackGames);
+        setPlatforms(["ALL", ...platforms]);
       } finally {
         setIsLoading(false);
       }
@@ -56,10 +90,22 @@ export default function GamesPage() {
     <PublicShell>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#080812] py-28 lg:py-36">
+      <section ref={heroRef} className="relative overflow-hidden bg-[#080812] py-28 lg:py-36">
+        {/* 3D Grid Lines Background */}
+        {render3d && (
+          <SceneCanvas aria-label="3D grid lines scene" className="z-10" bloomIntensity={0.65} bloomThreshold={0.6}>
+            <GamesGridScene />
+            <ambientLight intensity={0.03} />
+          </SceneCanvas>
+        )}
         {/* Background image */}
         <div className="absolute inset-0">
-          <img src={heroBg} alt="" className="h-full w-full object-cover object-center" />
+          <motion.img
+            style={{ y: heroBgY }}
+            src={img3}
+            alt=""
+            className="h-full w-full scale-110 object-cover object-center"
+          />
         </div>
         {/* Dark overlays */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-[#080812]" />
@@ -69,7 +115,7 @@ export default function GamesPage() {
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 60% at 80% 40%, rgba(124,58,237,0.3) 0%, transparent 70%)" }} />
         <FloatingParticles count={15} className="opacity-40" />
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <AnimeHeroExit className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <BlurFade delay={0.1}>
               <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-purple-400">
@@ -85,11 +131,12 @@ export default function GamesPage() {
               </h1>
             </BlurFade>
             {!isLoading && (
-              <BlurFade delay={0.3}>
-                <p className="mx-auto mt-4 max-w-lg text-base text-gray-400">
-                  {games.length}+ titles optimized for PS5 and PS4 Pro. Low-latency gaming on ultra-responsive displays.
-                </p>
-              </BlurFade>
+              <GsapTextSplit
+                className="mx-auto mt-4 max-w-lg"
+                innerClassName="text-base text-gray-400"
+              >
+                500+ titles optimized for PS5 and PS4 Pro. Low-latency gaming on ultra-responsive displays.
+              </GsapTextSplit>
             )}
           </div>
 
@@ -111,8 +158,13 @@ export default function GamesPage() {
               )}
             </div>
           </BlurFade>
-        </div>
+        </AnimeHeroExit>
       </section>
+
+      <NowPlayingBar />
+
+      {/* Scroll-driven horizontal 3D gallery */}
+      <FeaturedGallery games={games} />
 
       {/* Glow divider */}
       <div className="glow-divider" />
@@ -126,7 +178,14 @@ export default function GamesPage() {
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
             <div>
-              <h2 className="font-display text-2xl font-bold text-white sm:text-3xl">Game Selection</h2>
+              <GsapScrambleText
+                tag="h2"
+                className="font-display text-2xl font-bold text-white sm:text-3xl"
+                scrambleDuration={1.2}
+                stagger={0.035}
+              >
+                Game Selection
+              </GsapScrambleText>
               <p className="mt-1 text-sm text-gray-400">Filter by platform to find your next challenge.</p>
             </div>
             {platforms.length > 1 && (
@@ -179,7 +238,8 @@ export default function GamesPage() {
                 )}
               </div>
 
-              <motion.div layout className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimeMouseCamera maxRotate={3} maxTranslate={8}>
+              <motion.div layout className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 [perspective:1200px]">
                 <AnimatePresence mode="popLayout">
                   {visibleGames.map((game) => {
                     const colors = platformColors[game.platform] ?? defaultColors;
@@ -191,8 +251,8 @@ export default function GamesPage() {
                         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                         exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
                         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                        whileHover={{ y: -6, transition: { type: "spring", stiffness: 300, damping: 20 } }}
-                        className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[#0d0d18] transition-all hover:border-purple-500/25 hover:shadow-xl hover:shadow-purple-500/8"
+                        whileHover={{ y: -8, rotateX: 4, rotateY: -3, scale: 1.02, transition: { type: "spring", stiffness: 300, damping: 20 } }}
+                        className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[#0d0d18] transition-all [transform-style:preserve-3d] hover:border-purple-500/25 hover:shadow-xl hover:shadow-purple-500/8"
                       >
                         <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-gray-800/50 to-gray-900">
                           {game.imageUrl ? (
@@ -231,6 +291,7 @@ export default function GamesPage() {
                   })}
                 </AnimatePresence>
               </motion.div>
+              </AnimeMouseCamera>
             </>
           )}
         </div>
@@ -240,18 +301,18 @@ export default function GamesPage() {
       <section className="relative bg-[#080812] py-14 overflow-hidden">
         <div className="absolute inset-0 cyber-grid opacity-50 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 100% at 50% 50%, rgba(6,182,212,0.1) 0%, transparent 70%)" }} />
-        <div className="relative mx-auto max-w-3xl px-4 text-center">
+        <AnimeCameraReveal range={40} zoomFrom={0.94} className="relative mx-auto max-w-3xl px-4 text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-cyan-400 flex items-center justify-center gap-2 mb-4">
             <Zap size={14} /> Walk-In Welcome
           </p>
           <h2 className="text-2xl font-black uppercase text-white sm:text-3xl">
             Ready to Play?{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">
+            <AnimeTextShimmer className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">
               Come In Today.
-            </span>
+            </AnimeTextShimmer>
           </h2>
           <p className="mt-3 text-gray-400">No appointments needed. Prepaid sessions from 30 minutes.</p>
-        </div>
+        </AnimeCameraReveal>
       </section>
 
     </PublicShell>

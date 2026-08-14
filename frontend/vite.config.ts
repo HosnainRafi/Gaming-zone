@@ -10,6 +10,20 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three'],
+          'react-three': ['@react-three/fiber', '@react-three/drei'],
+          postprocessing: ['postprocessing', '@react-three/postprocessing'],
+          gsap: ['gsap', '@gsap/react'],
+          'framer-motion': ['framer-motion'],
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
@@ -24,3 +38,4 @@ export default defineConfig({
     },
   },
 });
+

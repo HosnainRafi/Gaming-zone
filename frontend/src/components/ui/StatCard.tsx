@@ -53,15 +53,23 @@ export function StatCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      whileHover={{
+        y: -4,
+        rotateX: 4,
+        rotateY: -3,
+        scale: 1.02,
+        transformPerspective: 900,
+      }}
       className={clsx(
-        "flex flex-col items-start gap-3 rounded-xl border border-gz-border bg-gz-card p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5 transition-shadow hover:shadow-lg",
+        "group relative flex flex-col items-start gap-3 overflow-hidden rounded-xl border border-gz-border bg-gz-card/80 p-4 backdrop-blur-xl transition-colors hover:border-violet-500/30 sm:flex-row sm:items-center sm:gap-4 sm:p-5",
         glow && `shadow-lg ${c.ring}`,
       )}
     >
+      {/* Gradient hairline that lights up on hover */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       <div
         className={clsx(
-          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl transition-transform",
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110",
           c.icon,
         )}
       >

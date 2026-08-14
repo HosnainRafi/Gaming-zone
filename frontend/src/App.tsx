@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import { Layout } from "./components/layout/Layout";
+import { CursorFX } from "./components/CursorFX";
 import { PageTransition, ScrollProgress } from "./components/motion";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext";
@@ -178,6 +179,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <SiteSettingsProvider>
+            <CursorFX />
             <AnimatedRoutes />
           </SiteSettingsProvider>
         </AuthProvider>

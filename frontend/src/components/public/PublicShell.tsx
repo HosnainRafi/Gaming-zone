@@ -40,7 +40,7 @@ function PublicShellInner({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-gz-bg text-white">
       {/* Tubelight Navbar */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
@@ -48,13 +48,14 @@ function PublicShellInner({ children }: { children: ReactNode }) {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className={`sticky top-0 z-50 transition-all duration-500 ${
           scrolled
-            ? "border-b border-purple-500/10 bg-[#0A0A0A]/95 shadow-2xl shadow-purple-500/5 backdrop-blur-2xl"
-            : "border-b border-transparent bg-[#0A0A0A]/70 backdrop-blur-md"
+            ? "border-b border-purple-500/10 bg-gz-bg/95 shadow-2xl shadow-purple-500/5 backdrop-blur-2xl"
+            : "border-b border-transparent bg-gz-bg/70 backdrop-blur-md"
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
           <Link to="/" className="group flex items-center gap-3">
             <motion.div
+              animate={{ scale: scrolled ? 0.88 : 1, rotate: scrolled ? 3 : 0 }}
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
               className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 shadow-lg shadow-purple-500/30 transition-all group-hover:shadow-purple-500/60"
@@ -147,7 +148,7 @@ function PublicShellInner({ children }: { children: ReactNode }) {
             animate={{ opacity: 1, height: "auto", filter: "blur(0px)" }}
             exit={{ opacity: 0, height: 0, filter: "blur(4px)" }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="border-t border-purple-500/10 bg-[#0A0A0A]/98 px-4 pb-5 pt-3 md:hidden overflow-hidden"
+            className="border-t border-purple-500/10 bg-gz-bg/98 px-4 pb-5 pt-3 md:hidden overflow-hidden"
           >
             <nav className="flex flex-col gap-1">
               {links.map((link) => (
@@ -183,7 +184,7 @@ function PublicShellInner({ children }: { children: ReactNode }) {
       <main>{children}</main>
 
       {/* Footer */}
-      <footer className="relative border-t border-white/5 bg-[#050508] overflow-hidden">
+      <footer className="relative border-t border-white/5 bg-gz-surface overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute bottom-0 left-1/4 h-[300px] w-[300px] rounded-full bg-purple-500/5 blur-[100px]" />
           <div className="absolute top-0 right-1/3 h-[200px] w-[200px] rounded-full bg-cyan-500/5 blur-[80px]" />
