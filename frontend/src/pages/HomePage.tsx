@@ -39,6 +39,7 @@ import {
   TextCycle,
 } from "../components/motion/effects";
 import { PublicShell } from "../components/public/PublicShell";
+import { InteractiveArena } from "../components/public/InteractiveArena";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function HomePage() {
@@ -131,7 +132,8 @@ export default function HomePage() {
         {/* Hero content */}
         <motion.div style={{ opacity: heroOpacity }} className="relative z-20 flex h-full items-center">
           <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl">
+            <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)]">
+              <div className="max-w-2xl">
 
               <BlurFade delay={0.1}>
                 <span className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/15 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-purple-300 backdrop-blur-sm">
@@ -196,6 +198,15 @@ export default function HomePage() {
                   ))}
                 </div>
               </BlurFade>
+              </div>
+              <motion.div
+                initial={{ opacity: 0, x: 28, scale: 0.96 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ delay: 0.45, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                className="hidden justify-self-end lg:block"
+              >
+                <InteractiveArena />
+              </motion.div>
             </div>
           </div>
         </motion.div>
